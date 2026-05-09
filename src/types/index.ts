@@ -7,7 +7,7 @@ export interface Token {
   column: number;
 }
 
-export type TagCategory = "function" | "phrase" | "connector" | "structure";
+export type TagCategory = "function" | "phrase" | "connector" | "structure" | "sentence" | "morphology";
 
 export interface Tag {
   id: string;
@@ -17,6 +17,7 @@ export interface Tag {
   category: TagCategory;
   color: string;
   description: string;
+  renderShape?: "line" | "bracket";
 }
 
 export type SelectionMode = "single" | "range";

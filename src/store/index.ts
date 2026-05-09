@@ -18,6 +18,7 @@ interface AnalysisState {
   addSpan: (tagId: string, tokenIds: string[], functionTagId?: string, isStructure?: boolean) => void;
   setPendingSpan: (span: { tagId: string; tokenIds: string[] } | null) => void;
   removeSpan: (spanId: string) => void;
+  removeLayer: (layer: number) => void;
   updateSpanTag: (spanId: string, tagId: string) => void;
   setCurrentLayer: (layer: number) => void;
   clearAnalysis: () => void;
@@ -60,9 +61,7 @@ export const useAnalysisStore = create<AnalysisState>()(
        * Adds a new element (span) to the syntactic tree applying strict pedagogical rules.
        * 
        * Rule 1 (Auto-correction): If the user selects "Subject" (Sujeto), Nominal Phrase (SN) is assumed.
-       * Rule 2 (Displacement): Level 1 is reserved for the orational level. If something
-       * other than Subject/Predicate is added at Level 1, it automatically jumps to Level 2.
-       * Rule 3 (Floating Structure): Structural elements (N, Det) always float to the N+1 layer.
+       * Rule 2 (Floating Structure): Structural elements (N, Det) always float to the N+1 layer.
        */
       addSpan: (tagId: string, tokenIds: string[], functionTagId?: string, isStructure?: boolean) => {
         const { spans, currentLayer } = get();
@@ -80,27 +79,20 @@ export const useAnalysisStore = create<AnalysisState>()(
           finalFunctionTagId = "predicado";
         }
 
-        const isSujetoPredicado = finalFunctionTagId === "sujeto" || finalFunctionTagId === "predicado";
-        
-        // Calculate the current maximum hierarchical level (excluding structure)
-        const hierarchicalLayers = spans.filter(s => !s.isStructure).map(s => s.layer);
-        const maxHierarchical = Math.max(1, ...hierarchicalLayers);
+
         
         let targetLayer = currentLayer;
-        if (isSujetoPredicado) {
-          targetLayer = 1; // Subject and Predicate are strictly Level 1 (Orational)
-        } else if (isStructure) {
-          // Structure tags ALWAYS go to the floating top layer
-          targetLayer = maxHierarchical + 1;
-        } else if (currentLayer === 1 && !isSujetoPredicado) {
-          // Displacement: If not orational and we are at Level 1, push to Level 2
-          targetLayer = 2;
+        
+        // Find the first available layer for these tokens starting from the current layer
+        while (spans.some(s => s.layer === targetLayer && s.tokenIds.some(id => tokenIds.includes(id)))) {
+          targetLayer++;
         }
 
-        // Check for duplicates
+        // Check for exact duplicates in the calculated target layer
         const alreadyExists = spans.some(
           (s) => s.tagId === finalTagId && 
             s.functionTagId === finalFunctionTagId &&
+            s.layer === targetLayer &&
             s.tokenIds.length === tokenIds.length &&
             s.tokenIds.every((id, idx) => id === tokenIds[idx])
         );
@@ -116,22 +108,10 @@ export const useAnalysisStore = create<AnalysisState>()(
           createdAt: Date.now(),
         };
 
-        let newSpans = [...spans, newSpan];
-
-        // STRUCTURE GOLDEN RULE: If a new hierarchy is generated (Level 2, 3...), 
-        // all internal structure elements (N, Det) "float" to the new top layer (N+1)
-        const newHierarchicalLayers = newSpans.filter(s => !s.isStructure).map(s => s.layer);
-        const newMaxHierarchical = Math.max(1, ...newHierarchicalLayers);
-        
-        newSpans = newSpans.map(s => {
-          if (s.isStructure) {
-            return { ...s, layer: newMaxHierarchical + 1 };
-          }
-          return s;
-        });
+        const newSpans = [...spans, newSpan];
 
         // Update UI layer if necessary
-        if (targetLayer > currentLayer && !isStructure) {
+        if (targetLayer > currentLayer) {
           set({ currentLayer: targetLayer });
         }
 
@@ -140,6 +120,12 @@ export const useAnalysisStore = create<AnalysisState>()(
 
       setPendingSpan: (span) => set({ pendingSpan: span }),
       removeSpan: (spanId: string) => set({ spans: get().spans.filter((s) => s.id !== spanId) }),
+      removeLayer: (layer: number) => {
+        set({
+          spans: get().spans.filter((s) => s.layer !== layer),
+          currentLayer: Math.max(1, layer - 1)
+        });
+      },
       updateSpanTag: (spanId: string, tagId: string) => set({ spans: get().spans.map((s) => s.id === spanId ? { ...s, tagId } : s) }),
       setCurrentLayer: (layer: number) => set({ currentLayer: layer }),
       clearAnalysis: () => set({ tokens: [], spans: [], currentAnalysis: null, isAnalyzed: false }),
@@ -200,6 +186,8 @@ interface UIState {
   highlightTokens: (tokenIds: string[]) => void;
   clearHighlights: () => void;
   setActiveSpanId: (spanId: string | null) => void;
+  isExporting: boolean;
+  setExporting: (exporting: boolean) => void;
 }
 
 export const useUIStore = create<UIState>()((set, get) => ({
@@ -246,4 +234,6 @@ export const useUIStore = create<UIState>()((set, get) => ({
   highlightTokens: (tokenIds: string[]) => set({ highlightedTokenIds: tokenIds }),
   clearHighlights: () => set({ highlightedTokenIds: [] }),
   setActiveSpanId: (spanId: string | null) => set({ activeSpanId: spanId }),
+  isExporting: false,
+  setExporting: (exporting: boolean) => set({ isExporting: exporting }),
 }));

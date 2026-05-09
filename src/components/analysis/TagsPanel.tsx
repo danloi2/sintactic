@@ -10,10 +10,12 @@ import { Search, X, ArrowLeft, Layers } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 const categoryLabels: Record<TagCategory, string> = {
-  phrase: "1. Sintagmas",
-  function: "2. Funciones Sintácticas",
+  sentence: "1. Oraciones",
+  phrase: "2. Sintagmas",
   connector: "3. Enlaces",
-  structure: "4. Estructura Interna",
+  function: "4. Funciones Sintácticas",
+  structure: "5. Estructura Interna",
+  morphology: "6. Morfología",
 };
 
 export function TagPanel({ className }: { className?: string }) {
@@ -44,23 +46,33 @@ export function TagPanel({ className }: { className?: string }) {
     }
 
     return {
+      sentence: list.filter((t) => t.category === "sentence"),
       phrase: list.filter((t) => t.category === "phrase"),
       connector: list.filter((t) => t.category === "connector"),
-      structure: list.filter((t) => t.category === "structure"),
       function: list.filter((t) => t.category === "function"),
+      structure: list.filter((t) => t.category === "structure"),
+      morphology: list.filter((t) => t.category === "morphology"),
     };
   }, [searchQuery, pendingSpan]);
 
   const handleTagClick = (tag: Tag) => {
     if (pendingSpan) {
-      if (tag.category === "function") {
-        addSpan(pendingSpan.tagId, pendingSpan.tokenIds, tag.id);
+      const isMorphologyMode = ["nucleo", "enlace", "nexo", "modificador"].includes(pendingSpan.tagId);
+      const targetCategory = isMorphologyMode ? "morphology" : "function";
+      
+      if (tag.category === targetCategory) {
+        const isStructure = tags.find(t => t.id === pendingSpan.tagId)?.category === "structure";
+        addSpan(pendingSpan.tagId, pendingSpan.tokenIds, tag.id, isStructure);
+        setPendingSpan(null);
+        clearSelection();
       }
       return;
     }
 
     if (selectedTokenIds.length > 0) {
-      if (tag.category === "phrase") {
+      const needsSecondary = tag.category === "phrase" || ["nucleo", "enlace", "nexo", "modificador"].includes(tag.id);
+      
+      if (needsSecondary) {
         setPendingSpan({ tagId: tag.id, tokenIds: selectedTokenIds });
         clearSelection();
       } else {

@@ -11,35 +11,45 @@ import { Separator } from "@/components/ui/separator";
 import { Layers, Download, Upload, RotateCcw, Image as ImageIcon, FileJson } from "lucide-react";
 import { toPng } from "html-to-image";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { cn } from "@/lib/utils";
 
 export function Header() {
   const { reset, isAnalyzed, phrase, tokens, spans, loadAnalysis } = useAnalysisStore();
-  const { isTagPanelOpen, setTagPanelOpen } = useUIStore();
-  const [isExporting, setIsExporting] = useState(false);
+  const { isTagPanelOpen, setTagPanelOpen, isExporting, setExporting } = useUIStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const exportAsImage = async () => {
-    const grid = document.querySelector(".token-grid-container-export") as HTMLElement;
-    if (!grid) return;
-    setIsExporting(true);
     try {
+      setExporting(true);
+      
+      // Delay para que React aplique el cambio de layout (re-render)
+      await new Promise(r => setTimeout(r, 150));
+
+      const grid = document.querySelector(".token-grid-container-export") as HTMLElement;
+      if (!grid) {
+        setExporting(false);
+        return;
+      }
+
       const dataUrl = await toPng(grid, {
         backgroundColor: "#ffffff",
+        pixelRatio: 2,
         style: {
-          padding: "40px",
+          padding: "50px",
           borderRadius: "0px",
         }
       });
+
+      setExporting(false);
+
       const link = document.createElement("a");
       link.download = `analisis-${phrase.substring(0, 20)}.png`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
       console.error("Error al exportar imagen", err);
-    } finally {
-      setIsExporting(false);
+      setExporting(false);
     }
   };
 
@@ -82,7 +92,6 @@ export function Header() {
       }
     };
     reader.readAsText(file);
-    // Limpiar el input para permitir volver a cargar el mismo archivo
     e.target.value = "";
   };
 

@@ -1,8 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAnalysisStore, useUIStore } from "@/store";
+import { Tag, TagCategory } from "@/types";
 import { tags as allTags, getTagsByCategory } from "@/data/tags";
 import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
+import { X, Search } from "lucide-react";
 
 interface FunctionSelectorProps {
   className?: string;
@@ -11,8 +12,24 @@ interface FunctionSelectorProps {
 export function FunctionSelector({ className }: FunctionSelectorProps) {
   const { pendingSpan, setPendingSpan, addSpan } = useAnalysisStore();
   const { clearSelection } = useUIStore();
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const functions = useMemo(() => getTagsByCategory("function"), []);
+  const isMorphologyMode = useMemo(() => {
+    return pendingSpan && ["nucleo", "enlace", "nexo", "modificador"].includes(pendingSpan.tagId);
+  }, [pendingSpan]);
+
+  const functions = useMemo(() => {
+    const category: TagCategory = isMorphologyMode ? "morphology" : "function";
+    const baseTags = getTagsByCategory(category);
+    if (!searchQuery.trim()) return baseTags;
+
+    const term = searchQuery.toLowerCase().trim();
+    return baseTags.filter(tag =>
+      tag.label.toLowerCase().includes(term) ||
+      tag.short.toLowerCase().includes(term) ||
+      (tag.aliases && tag.aliases.some(a => a.toLowerCase().includes(term)))
+    );
+  }, [isMorphologyMode, searchQuery]);
 
   if (!pendingSpan) return null;
 
@@ -20,7 +37,7 @@ export function FunctionSelector({ className }: FunctionSelectorProps) {
 
   const handleSelectFunction = (functionTagId: string) => {
     if (pendingSpan) {
-      addSpan(pendingSpan.tagId, pendingSpan.tokenIds, functionTagId);
+      addSpan(pendingSpan.tagId, pendingSpan.tokenIds, functionTagId, selectedTag?.category === "structure");
       clearSelection();
       setPendingSpan(null);
     }
@@ -28,7 +45,7 @@ export function FunctionSelector({ className }: FunctionSelectorProps) {
 
   const handleSkip = () => {
     if (pendingSpan) {
-      addSpan(pendingSpan.tagId, pendingSpan.tokenIds);
+      addSpan(pendingSpan.tagId, pendingSpan.tokenIds, undefined, selectedTag?.category === "structure");
       clearSelection();
       setPendingSpan(null);
     }
@@ -54,7 +71,7 @@ export function FunctionSelector({ className }: FunctionSelectorProps) {
         <div className="flex items-center justify-between p-4 border-b border-border bg-primary/10">
           <div>
             <span className="text-xs text-muted-foreground uppercase tracking-wide">
-              Selecciona la función de
+              Selecciona {isMorphologyMode ? "la categoría morfológica" : "la función"} de
             </span>
             <p className="text-lg font-bold text-foreground">
               {selectedTag?.label}
@@ -68,8 +85,22 @@ export function FunctionSelector({ className }: FunctionSelectorProps) {
           </button>
         </div>
 
+        <div className="p-3 border-b border-border bg-muted/20">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              autoFocus
+              placeholder={isMorphologyMode ? "Buscar categoría..." : "Buscar función..."}
+              className="w-full bg-background border border-border rounded-md py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
         <div className="p-3 grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
-          {functions.map((func) => (
+          {functions.map((func: Tag) => (
             <button
               key={func.id}
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors text-left border border-border hover:border-primary"
@@ -96,7 +127,7 @@ export function FunctionSelector({ className }: FunctionSelectorProps) {
             className="text-sm text-muted-foreground hover:text-foreground"
             onClick={handleSkip}
           >
-            Omitir (sin función)
+            Omitir ({isMorphologyMode ? "sin categoría" : "sin función"})
           </button>
           <button
             className="text-sm text-destructive hover:underline"

@@ -41,11 +41,11 @@ export function Autocomplete({ className }: AutocompleteProps) {
   const handleSelectTag = useCallback(
     (tag: Tag) => {
       if (selectedTokenIds.length > 0) {
-        if (tag.category === "phrase") {
-          // Si es un sintagma, pedir función
+        if (tag.category === "phrase" || ["nucleo", "enlace", "nexo", "modificador"].includes(tag.id)) {
+          // Si es un sintagma o núcleo/enlace/nexo/modificador, pedir función/morfología
           setPendingSpan({ tagId: tag.id, tokenIds: selectedTokenIds });
         } else {
-          // Función, Conector o Estructura, agregar directamente
+          // Otros, agregar directamente
           addSpan(tag.id, selectedTokenIds, undefined, tag.category === "structure");
         }
         clearSelection();
@@ -143,38 +143,60 @@ export function Autocomplete({ className }: AutocompleteProps) {
           </div>
         )}
 
-        <div className="max-h-64 overflow-y-auto">
+        <div className="max-h-[60vh] overflow-y-auto p-1 custom-scrollbar">
           {filteredTags.length > 0 ? (
-            filteredTags.map((tag, index) => (
-              <button
-                key={tag.id}
-                className={cn(
-                  "autocomplete-item w-full text-left flex items-center gap-3",
-                  index === selectedIndex && "bg-accent"
-                )}
-                onClick={() => handleSelectTag(tag)}
-                onMouseEnter={() => setSelectedIndex(index)}
-              >
-                <span
-                  className="w-3 h-3 rounded-full shrink-0"
-                  style={{ backgroundColor: tag.color }}
-                />
-                <span className="flex-1 text-sm text-foreground">
-                  {tag.label}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {tag.short}
-                </span>
-                {tag.aliases.length > 0 && (
-                  <span className="text-xs text-muted-foreground hidden sm:inline">
-                    · {tag.aliases[0]}
-                  </span>
-                )}
-              </button>
-            ))
+            (() => {
+              let lastCategory = "";
+              return filteredTags.map((tag, index) => {
+                const showHeader = tag.category !== lastCategory;
+                lastCategory = tag.category;
+                
+                return (
+                  <div key={tag.id}>
+                    {showHeader && (
+                      <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 bg-muted/30 sticky top-0 z-10 backdrop-blur-sm border-y border-border/50 first:border-t-0">
+                        {tag.category === "sentence" && "Oraciones"}
+                        {tag.category === "phrase" && "Sintagmas"}
+                        {tag.category === "connector" && "Conectores"}
+                        {tag.category === "function" && "Funciones"}
+                        {tag.category === "structure" && "Estructura"}
+                        {tag.category === "morphology" && "Morfología"}
+                      </div>
+                    )}
+                    <button
+                      className={cn(
+                        "w-full text-left flex items-center gap-3 px-3 py-2.5 transition-all duration-200 rounded-md",
+                        index === selectedIndex ? "bg-primary text-primary-foreground shadow-md scale-[1.02] z-20" : "hover:bg-accent text-foreground"
+                      )}
+                      onClick={() => handleSelectTag(tag)}
+                      onMouseEnter={() => setSelectedIndex(index)}
+                      ref={index === selectedIndex ? (el) => el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }) : null}
+                    >
+                      <span
+                        className={cn(
+                          "w-2.5 h-2.5 rounded-full shrink-0 border border-white/20",
+                          index === selectedIndex ? "bg-white" : ""
+                        )}
+                        style={{ backgroundColor: index === selectedIndex ? undefined : tag.color }}
+                      />
+                      <span className="flex-1 text-sm font-medium">
+                        {tag.label}
+                      </span>
+                      <span className={cn(
+                        "text-[10px] px-1.5 py-0.5 rounded font-bold border",
+                        index === selectedIndex ? "bg-white/20 border-white/40 text-white" : "bg-muted border-border text-muted-foreground"
+                      )}>
+                        {tag.short}
+                      </span>
+                    </button>
+                  </div>
+                );
+              });
+            })()
           ) : (
-            <div className="px-3 py-8 text-center text-muted-foreground">
-              <p className="text-sm">No se encontraron etiquetas</p>
+            <div className="px-3 py-12 text-center text-muted-foreground">
+              <Search className="h-8 w-8 mx-auto mb-3 opacity-20" />
+              <p className="text-sm">No se encontraron etiquetas para "{autocompleteQuery}"</p>
             </div>
           )}
         </div>

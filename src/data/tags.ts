@@ -8,8 +8,9 @@ export const tags: Tag[] = [
     short: "SN",
     aliases: ["sn", "s.n.", "sintagma nominal", "nominal"],
     category: "phrase",
-    color: "#EF4444",
+    color: "#3B82F6",
     description: "Su núcleo es un sustantivo o pronombre.",
+    renderShape: "bracket",
   },
   {
     id: "sv",
@@ -17,8 +18,9 @@ export const tags: Tag[] = [
     short: "SV",
     aliases: ["sv", "s.v.", "sintagma verbal", "verbal"],
     category: "phrase",
-    color: "#22C55E",
+    color: "#EF4444",
     description: "Su núcleo es un verbo. Forma el predicado.",
+    renderShape: "bracket",
   },
   {
     id: "sprep",
@@ -28,6 +30,7 @@ export const tags: Tag[] = [
     category: "phrase",
     color: "#8B5CF6",
     description: "Empieza con una preposición + un SN.",
+    renderShape: "bracket",
   },
   {
     id: "sadj",
@@ -35,8 +38,9 @@ export const tags: Tag[] = [
     short: "SAdj",
     aliases: ["sadj", "s.adj", "sintagma adjetival", "adjetival"],
     category: "phrase",
-    color: "#3B82F6",
+    color: "#10B981",
     description: "Su núcleo es un adjetivo.",
+    renderShape: "bracket",
   },
   {
     id: "sadv",
@@ -46,6 +50,7 @@ export const tags: Tag[] = [
     category: "phrase",
     color: "#F59E0B",
     description: "Su núcleo es un adverbio.",
+    renderShape: "bracket",
   },
 
   // 2. Funciones sintácticas (function)
@@ -55,8 +60,9 @@ export const tags: Tag[] = [
     short: "Suj",
     aliases: ["suj", "sujeto", "subject"],
     category: "function",
-    color: "#6366F1",
+    color: "#2563EB",
     description: "Es quien realiza la acción o de quien se dice algo.",
+    renderShape: "bracket",
   },
   {
     id: "predicado",
@@ -64,8 +70,9 @@ export const tags: Tag[] = [
     short: "Pred",
     aliases: ["pred", "predicado", "predicate"],
     category: "function",
-    color: "#EC4899",
+    color: "#DC2626",
     description: "Lo que se dice del sujeto.",
+    renderShape: "bracket",
   },
   {
     id: "cd",
@@ -73,8 +80,9 @@ export const tags: Tag[] = [
     short: "CD",
     aliases: ["cd", "c.d.", "od", "objeto directo"],
     category: "function",
-    color: "#F97316",
+    color: "#EA580C",
     description: "Recibe directamente la acción del verbo.",
+    renderShape: "bracket",
   },
   {
     id: "ci",
@@ -82,17 +90,99 @@ export const tags: Tag[] = [
     short: "CI",
     aliases: ["ci", "c.i.", "oi", "objeto indirecto"],
     category: "function",
-    color: "#10B981",
+    color: "#059669",
     description: "Indica a quién o para quién se hace la acción.",
+    renderShape: "bracket",
   },
   {
-    id: "cc",
-    label: "Complemento Circunstancial",
-    short: "CC",
-    aliases: ["cc", "c.c.", "lugar", "tiempo", "modo", "causa", "ccl", "cct", "ccm", "ccc"],
+    id: "ccl",
+    label: "Complemento Circunstancial de Lugar",
+    short: "CCL",
+    aliases: ["ccl", "cc de lugar", "lugar", "c.c.l."],
     category: "function",
-    color: "#14B8A6",
-    description: "Indica circunstancias: lugar, tiempo, modo, causa…",
+    color: "#06B6D4",
+    description: "Indica el lugar donde se realiza la acción.",
+    renderShape: "bracket",
+  },
+  {
+    id: "cct",
+    label: "Complemento Circunstancial de Tiempo",
+    short: "CCT",
+    aliases: ["cct", "cc de tiempo", "tiempo", "c.c.t."],
+    category: "function",
+    color: "#06B6D4",
+    description: "Indica el momento en el que se realiza la acción.",
+    renderShape: "bracket",
+  },
+  {
+    id: "ccm",
+    label: "Complemento Circunstancial de Modo",
+    short: "CCM",
+    aliases: ["ccm", "cc de modo", "modo", "c.c.m."],
+    category: "function",
+    color: "#06B6D4",
+    description: "Indica la manera en la que se realiza la acción.",
+    renderShape: "bracket",
+  },
+  {
+    id: "ccc",
+    label: "Complemento Circunstancial de Cantidad",
+    short: "CCC",
+    aliases: ["ccc", "cc de cantidad", "cantidad", "c.c.c."],
+    category: "function",
+    color: "#06B6D4",
+    description: "Indica la cantidad o grado de la acción.",
+    renderShape: "bracket",
+  },
+  {
+    id: "cci",
+    label: "Complemento Circunstancial de Medio, materia o instrumento",
+    short: "CCI",
+    aliases: ["cci", "cc de instrumento", "cc de medio", "cc de materia", "instrumento", "medio", "materia", "c.c.i."],
+    category: "function",
+    color: "#06B6D4",
+    description: "Indica el instrumento, medio o materia con que se realiza la acción.",
+    renderShape: "bracket",
+  },
+  {
+    id: "ccca",
+    label: "Complemento Circunstancial de Causa",
+    short: "CC Ca",
+    aliases: ["ccca", "cc ca", "cc de causa", "causa", "c.c.ca."],
+    category: "function",
+    color: "#06B6D4",
+    description: "Indica la causa por la que se realiza la acción.",
+    renderShape: "bracket",
+  },
+  {
+    id: "ccf",
+    label: "Complemento Circunstancial de Finalidad",
+    short: "CCF",
+    aliases: ["ccf", "cc de finalidad", "finalidad", "c.c.f."],
+    category: "function",
+    color: "#06B6D4",
+    description: "Indica el propósito o fin de la acción.",
+    renderShape: "bracket",
+  },
+  {
+    id: "ccb",
+    label: "Complemento Circunstancial de Beneficiario",
+    short: "CCB",
+    aliases: ["ccb", "cc de beneficiario", "beneficiario", "c.c.b."],
+    category: "function",
+    color: "#06B6D4",
+    description: "Indica el beneficiario de la acción.",
+    renderShape: "bracket",
+  },
+  {
+    id: "cccomp",
+    label: "Complemento Circunstancial de Compañía",
+    short: "CC Comp",
+    aliases: ["cccomp", "cc comp", "cc de compañia", "compañía", "c.c.comp."],
+    category: "function",
+    color: "#06B6D4",
+    description: "Indica con quién se realiza la acción.",
+    renderShape: "bracket",
   },
   {
     id: "creg",
@@ -100,8 +190,9 @@ export const tags: Tag[] = [
     short: "CReg",
     aliases: ["creg", "c.reg.", "cr", "suplemento"],
     category: "function",
-    color: "#06B6D4",
+    color: "#6366F1",
     description: "Va con verbos que exigen preposición.",
+    renderShape: "bracket",
   },
   {
     id: "cagente",
@@ -109,8 +200,9 @@ export const tags: Tag[] = [
     short: "CAg",
     aliases: ["cag", "c.ag.", "agente", "complemento agente"],
     category: "function",
-    color: "#F43F5E",
+    color: "#BE123C",
     description: "En oraciones pasivas, indica quién realiza la acción.",
+    renderShape: "bracket",
   },
   {
     id: "cpred",
@@ -120,6 +212,7 @@ export const tags: Tag[] = [
     category: "function",
     color: "#84CC46",
     description: "Aporta una cualidad del sujeto o del CD.",
+    renderShape: "bracket",
   },
   {
     id: "atributo",
@@ -127,8 +220,9 @@ export const tags: Tag[] = [
     short: "Atrib",
     aliases: ["atrib", "atr", "atributo"],
     category: "function",
-    color: "#3B82F6",
+    color: "#FB7185",
     description: "Aparece con verbos copulativos (ser, estar, parecer).",
+    renderShape: "bracket",
   },
   {
     id: "termino",
@@ -136,8 +230,9 @@ export const tags: Tag[] = [
     short: "T",
     aliases: ["t", "term", "termino", "término"],
     category: "function",
-    color: "#94A3B8",
+    color: "#64748B",
     description: "Elemento dentro de un SPrep (después de la preposición).",
+    renderShape: "bracket",
   },
   {
     id: "complemento-nombre",
@@ -145,8 +240,29 @@ export const tags: Tag[] = [
     short: "CN",
     aliases: ["cn", "complemento del nombre", "c.n."],
     category: "function",
-    color: "#EC4899",
+    color: "#D946EF",
     description: "Sintagma que complementa a un nombre.",
+    renderShape: "bracket",
+  },
+  {
+    id: "f-protasis",
+    label: "Función Prótasis",
+    short: "Prót",
+    aliases: ["función prótasis", "protasis", "prótasis", "condición"],
+    category: "function",
+    color: "#1E293B",
+    description: "Función que desempeña la oración subordinada al establecer la condición.",
+    renderShape: "bracket",
+  },
+  {
+    id: "f-apodosis",
+    label: "Función Apódosis",
+    short: "Apód",
+    aliases: ["función apódosis", "apodosis", "apódosis", "consecuencia"],
+    category: "function",
+    color: "#1E293B",
+    description: "Función que desempeña la oración principal al expresar el resultado de la condición.",
+    renderShape: "bracket",
   },
 
   // 3. Enlaces (connector)
@@ -156,8 +272,19 @@ export const tags: Tag[] = [
     short: "Enl",
     aliases: ["enl", "enlace", "prep", "preposicion"],
     category: "connector",
-    color: "#475569",
+    color: "#334155",
     description: "Preposiciones o elementos que conectan palabras.",
+    renderShape: "line",
+  },
+  {
+    id: "nexo",
+    label: "Nexo",
+    short: "Nx",
+    aliases: ["nx", "nexo", "conjunción", "conj"],
+    category: "connector",
+    color: "#475569",
+    description: "Palabra que une oraciones o sintagmas (conjunción, locución, etc.).",
+    renderShape: "line",
   },
 
   // 4. Estructura interna (structure)
@@ -167,17 +294,9 @@ export const tags: Tag[] = [
     short: "N",
     aliases: ["nucleo", "núcleo", "head"],
     category: "structure",
-    color: "#A855F7",
+    color: "#7C3AED",
     description: "Palabra principal del sintagma.",
-  },
-  {
-    id: "determinante",
-    label: "Determinante",
-    short: "Det",
-    aliases: ["det", "determinante", "article"],
-    category: "structure",
-    color: "#FACC15",
-    description: "Palabra que acompaña y determina al sustantivo.",
+    renderShape: "line",
   },
   {
     id: "modificador",
@@ -185,8 +304,203 @@ export const tags: Tag[] = [
     short: "Mod",
     aliases: ["mod", "modificador", "modifier"],
     category: "structure",
-    color: "#64748B",
+    color: "#94A3B8",
     description: "Aporta información extra al núcleo.",
+    renderShape: "line",
+  },
+
+  // 5. Morfología (morphology)
+  {
+    id: "sustantivo",
+    label: "Sustantivo",
+    short: "Sust",
+    aliases: ["sustantivo", "nombre", "n", "sust"],
+    category: "morphology",
+    color: "#3B82F6", // Mismo azul que SN
+    description: "Palabra que designa seres, objetos, ideas o sentimientos.",
+    renderShape: "line",
+  },
+  {
+    id: "adjetivo",
+    label: "Adjetivo",
+    short: "Adj",
+    aliases: ["adjetivo", "adj"],
+    category: "morphology",
+    color: "#10B981", // Mismo verde que SAdj
+    description: "Palabra que expresa cualidades o propiedades del sustantivo.",
+    renderShape: "line",
+  },
+  {
+    id: "pronombre",
+    label: "Pronombre",
+    short: "Pron",
+    aliases: ["pronombre", "pron"],
+    category: "morphology",
+    color: "#3B82F6", // Mismo azul que SN
+    description: "Palabra que sustituye al sustantivo o hace referencia a él.",
+    renderShape: "line",
+  },
+  {
+    id: "determinante",
+    label: "Determinante",
+    short: "Det",
+    aliases: ["det", "determinante", "article"],
+    category: "morphology",
+    color: "#EAB308",
+    description: "Palabra que acompaña y determina al sustantivo.",
+    renderShape: "line",
+  },
+  {
+    id: "verbo",
+    label: "Verbo",
+    short: "V",
+    aliases: ["verbo", "v"],
+    category: "morphology",
+    color: "#EF4444", // Mismo rojo que SV
+    description: "Palabra que expresa acción, estado o proceso.",
+    renderShape: "line",
+  },
+  {
+    id: "adverbio",
+    label: "Adverbio",
+    short: "Adv",
+    aliases: ["adverbio", "adv"],
+    category: "morphology",
+    color: "#F59E0B", // Mismo ámbar que SAdv
+    description: "Palabra invariable que modifica a un verbo, adjetivo u otro adverbio.",
+    renderShape: "line",
+  },
+  {
+    id: "preposicion",
+    label: "Preposición",
+    short: "Prep",
+    aliases: ["preposición", "prep"],
+    category: "morphology",
+    color: "#8B5CF6", // Mismo violeta que SPrep
+    description: "Palabra invariable que introduce un complemento.",
+    renderShape: "line",
+  },
+  {
+    id: "conjuncion",
+    label: "Conjunción",
+    short: "Conj",
+    aliases: ["conjunción", "conj"],
+    category: "morphology",
+    color: "#475569",
+    description: "Palabra invariable que une oraciones o elementos de la misma clase.",
+    renderShape: "line",
+  },
+  {
+    id: "interjeccion",
+    label: "Interjección",
+    short: "Interj",
+    aliases: ["interjección", "interj"],
+    category: "morphology",
+    color: "#475569",
+    description: "Palabra que expresa sentimientos vivos, impresiones o llamadas de atención.",
+    renderShape: "line",
+  },
+
+  // 6. Oraciones (sentence)
+  {
+    id: "oracion-1",
+    label: "Oración 1",
+    short: "O1",
+    aliases: ["o1", "oración 1", "proposición 1", "p1"],
+    category: "sentence",
+    color: "#1E293B",
+    description: "Primera oración de una estructura compuesta o coordinada.",
+    renderShape: "bracket",
+  },
+  {
+    id: "oracion-2",
+    label: "Oración 2",
+    short: "O2",
+    aliases: ["o2", "oración 2", "proposición 2", "p2"],
+    category: "sentence",
+    color: "#1E293B",
+    description: "Segunda oración de una estructura compuesta o coordinada.",
+    renderShape: "bracket",
+  },
+  {
+    id: "op",
+    label: "Oración Principal",
+    short: "OP",
+    aliases: ["op", "principal", "oración principal"],
+    category: "sentence",
+    color: "#1E293B",
+    description: "Oración de la que depende una subordinada o que constituye el núcleo de la estructura.",
+    renderShape: "bracket",
+  },
+  {
+    id: "ossust",
+    label: "Oración Subordinada Sustantiva",
+    short: "OSSust",
+    aliases: ["ossust", "sustantiva", "subordinada sustantiva", "o.s.s."],
+    category: "sentence",
+    color: "#1E293B",
+    description: "Oración que desempeña las funciones propias de un sustantivo.",
+    renderShape: "bracket",
+  },
+  {
+    id: "osadj",
+    label: "Oración Subordinada Adjetival",
+    short: "OSAdj",
+    aliases: ["osadj", "adjetival", "subordinada adjetival", "o.s.a.", "relativo"],
+    category: "sentence",
+    color: "#1E293B",
+    description: "Oración que funciona como un adjetivo, normalmente complementando a un sustantivo antecedente.",
+    renderShape: "bracket",
+  },
+  {
+    id: "osadv",
+    label: "Oración Subordinada Adverbial",
+    short: "OSAdv",
+    aliases: ["osadv", "adverbial", "subordinada adverbial", "o.s.adv."],
+    category: "sentence",
+    color: "#1E293B",
+    description: "Oración que funciona como un adverbio, desempeñando funciones circunstanciales.",
+    renderShape: "bracket",
+  },
+  {
+    id: "osrelat",
+    label: "Oración Subordinada de Relativo",
+    short: "OSRelat",
+    aliases: ["osrelat", "relativo", "subordinada de relativo", "o.s.rel."],
+    category: "sentence",
+    color: "#1E293B",
+    description: "Oración introducida por un relativo que desempeña una función dentro de la subordinada.",
+    renderShape: "bracket",
+  },
+  {
+    id: "osadv-causal",
+    label: "Oración Subordinada Adverbial Causal",
+    short: "OSAdv Causal",
+    aliases: ["osadv causal", "causal", "subordinada causal", "o.s.adv.causal"],
+    category: "sentence",
+    color: "#1E293B",
+    description: "Oración subordinada que expresa la causa o razón de lo expuesto en la principal.",
+    renderShape: "bracket",
+  },
+  {
+    id: "osadv-final",
+    label: "Oración Subordinada Adverbial Final",
+    short: "OSAdv Final",
+    aliases: ["osadv final", "final", "subordinada final", "o.s.adv.final"],
+    category: "sentence",
+    color: "#1E293B",
+    description: "Oración subordinada que expresa el propósito o la finalidad de la acción principal.",
+    renderShape: "bracket",
+  },
+  {
+    id: "osadv-condicional",
+    label: "Oración Subordinada Adverbial Condicional",
+    short: "OSAdv Cond",
+    aliases: ["osadv condicional", "condicional", "subordinada condicional", "o.s.adv.cond."],
+    category: "sentence",
+    color: "#1E293B",
+    description: "Oración subordinada que impone una condición para que se cumpla lo expresado en la principal.",
+    renderShape: "bracket",
   },
 ];
 
@@ -205,15 +519,28 @@ export const findTagByAlias = (query: string): Tag | undefined => {
   );
 };
 
+const CATEGORY_ORDER: Record<Tag["category"], number> = {
+  sentence: 1,
+  phrase: 2,
+  connector: 3,
+  function: 4,
+  structure: 5,
+  morphology: 6,
+};
+
 export const filterTags = (query: string): Tag[] => {
   const lowerQuery = query.toLowerCase().trim();
-  if (!lowerQuery) return tags;
+  let result = tags;
 
-  return tags.filter(
-    (tag) =>
-      tag.label.toLowerCase().includes(lowerQuery) ||
-      tag.short.toLowerCase().includes(lowerQuery) ||
-      tag.description.toLowerCase().includes(lowerQuery) ||
-      tag.aliases.some((alias) => alias.toLowerCase().includes(lowerQuery))
-  );
+  if (lowerQuery) {
+    result = tags.filter(
+      (tag) =>
+        tag.label.toLowerCase().includes(lowerQuery) ||
+        tag.short.toLowerCase().includes(lowerQuery) ||
+        tag.description.toLowerCase().includes(lowerQuery) ||
+        tag.aliases.some((alias) => alias.toLowerCase().includes(lowerQuery))
+    );
+  }
+
+  return [...result].sort((a, b) => CATEGORY_ORDER[a.category] - CATEGORY_ORDER[b.category]);
 };

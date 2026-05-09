@@ -41,7 +41,7 @@ export function App() {
           isTagPanelOpen ? "mr-72" : ""
         )}
       >
-        <div className="container py-8">
+        <div className="container px-4 sm:px-6 py-8 max-w-none">
           {!isAnalyzed ? (
             <PhraseInput />
           ) : (
