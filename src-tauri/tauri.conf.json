@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Sintactic",
+        "title": "Sintactic by Daniel Losada",
         "width": 800,
         "height": 600,
         "resizable": true,
