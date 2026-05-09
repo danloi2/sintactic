@@ -36,18 +36,22 @@ export function Header() {
 
         if (path) {
           if (typeof dataUrl === "string" && dataUrl.startsWith("data:image")) {
-            // Es una imagen base64
             const base64Data = dataUrl.split(",")[1];
-            const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            const binaryData = new Uint8Array(
+              atob(base64Data)
+                .split("")
+                .map(char => char.charCodeAt(0))
+            );
             await writeFile(path, binaryData);
           } else {
-            // Es texto (JSON)
             await writeTextFile(path, typeof dataUrl === "string" ? dataUrl : JSON.stringify(dataUrl, null, 2));
           }
+          alert("Archivo guardado correctamente");
         }
         return;
       } catch (err) {
         console.error("Error saving via Tauri", err);
+        alert("Error al guardar el archivo: " + (err instanceof Error ? err.message : String(err)));
       }
     }
 
