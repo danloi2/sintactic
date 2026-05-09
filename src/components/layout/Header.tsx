@@ -14,17 +14,57 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { useRef } from "react";
 import { cn } from "@/lib/utils";
 
+// Tauri imports (v2)
+// Usamos imports dinámicos o chequeamos existencia para no romper la versión web pura si se sube a un servidor
+const isTauri = typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__;
+
 export function Header() {
   const { reset, isAnalyzed, phrase, tokens, spans, loadAnalysis } = useAnalysisStore();
   const { isTagPanelOpen, setTagPanelOpen, isExporting, setExporting } = useUIStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const saveFile = async (dataUrl: string | Blob, fileName: string) => {
+    if (isTauri) {
+      try {
+        const { save } = await import("@tauri-apps/plugin-dialog");
+        const { writeTextFile, writeFile } = await import("@tauri-apps/plugin-fs");
+
+        const path = await save({
+          defaultPath: fileName,
+          filters: [{ name: "Archivo", extensions: [fileName.split(".").pop() || "*"] }]
+        });
+
+        if (path) {
+          if (typeof dataUrl === "string" && dataUrl.startsWith("data:image")) {
+            // Es una imagen base64
+            const base64Data = dataUrl.split(",")[1];
+            const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            await writeFile(path, binaryData);
+          } else {
+            // Es texto (JSON)
+            await writeTextFile(path, typeof dataUrl === "string" ? dataUrl : JSON.stringify(dataUrl, null, 2));
+          }
+        }
+        return;
+      } catch (err) {
+        console.error("Error saving via Tauri", err);
+      }
+    }
+
+    // Fallback web
+    const link = document.createElement("a");
+    link.download = fileName;
+    link.href = typeof dataUrl === "string" ? dataUrl : URL.createObjectURL(dataUrl);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    if (typeof dataUrl !== "string") URL.revokeObjectURL(link.href);
+  };
+
   const exportAsImage = async () => {
     try {
       setExporting(true);
-      
-      // Delay para que React aplique el cambio de layout (re-render)
-      await new Promise(r => setTimeout(r, 150));
+      await new Promise(r => setTimeout(r, 200));
 
       const grid = document.querySelector(".token-grid-container-export") as HTMLElement;
       if (!grid) {
@@ -35,38 +75,33 @@ export function Header() {
       const dataUrl = await toPng(grid, {
         backgroundColor: "#ffffff",
         pixelRatio: 2,
-        style: {
-          padding: "50px",
-          borderRadius: "0px",
-        }
+        style: { padding: "50px", borderRadius: "0px" }
       });
 
       setExporting(false);
-
-      const link = document.createElement("a");
-      link.download = `analisis-${phrase.substring(0, 20)}.png`;
-      link.href = dataUrl;
-      link.click();
+      await saveFile(dataUrl, `analisis-${phrase.substring(0, 20).replace(/\s+/g, "_")}.png`);
     } catch (err) {
       console.error("Error al exportar imagen", err);
       setExporting(false);
     }
   };
 
-  const exportAsJSON = () => {
+  const exportAsJSON = async () => {
     const data = {
       phrase,
       tokens,
       spans,
       exportedAt: new Date().toISOString()
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.download = `analisis-${phrase.substring(0, 20)}.json`;
-    link.href = url;
-    link.click();
-    URL.revokeObjectURL(url);
+    const jsonStr = JSON.stringify(data, null, 2);
+    const fileName = `analisis-${phrase.substring(0, 20).replace(/\s+/g, "_")}.json`;
+    
+    if (isTauri) {
+      await saveFile(jsonStr, fileName);
+    } else {
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      await saveFile(blob, fileName);
+    }
   };
 
   const handleImportClick = () => {
