@@ -23,6 +23,7 @@ export function Header() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const saveFile = async (dataUrl: string | Blob, fileName: string) => {
+    // Escenario Desktop (Tauri)
     if (isTauri) {
       try {
         const { save } = await import("@tauri-apps/plugin-dialog");
@@ -54,10 +55,47 @@ export function Header() {
       } catch (err) {
         console.error("Error saving via Tauri", err);
         alert("Error al guardar el archivo: " + (err instanceof Error ? err.message : String(err)));
+        return;
       }
     }
 
-    // Fallback web
+    // Escenario Web con API de Sistema de Archivos (Chrome/Edge/Opera)
+    if ("showSaveFilePicker" in window) {
+      try {
+        const extension = fileName.split(".").pop() || "json";
+        const mimeType = extension === "json" ? "application/json" : "image/png";
+        
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName: fileName,
+          types: [{
+            description: extension === "json" ? "Análisis Sintáctico" : "Imagen de Análisis",
+            accept: { [mimeType]: [`.${extension}`] }
+          }]
+        });
+        
+        const writable = await handle.createWritable();
+        
+        if (typeof dataUrl === "string" && dataUrl.startsWith("data:image")) {
+          const res = await fetch(dataUrl);
+          const blob = await res.blob();
+          await writable.write(blob);
+        } else {
+          await writable.write(dataUrl);
+        }
+        
+        await writable.close();
+        return;
+      } catch (err: any) {
+        // Si el usuario cancela, no hacemos nada. Si es otro error, fallback a descarga clásica.
+        if (err.name !== "AbortError") {
+          console.error("FileSystem API error, falling back to legacy download", err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    // Fallback web clásico (Descarga directa)
     const link = document.createElement("a");
     link.download = fileName;
     link.href = typeof dataUrl === "string" ? dataUrl : URL.createObjectURL(dataUrl);
