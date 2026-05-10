@@ -15,7 +15,6 @@ import { useRef } from "react";
 import { cn } from "@/lib/utils";
 
 // Tauri imports (v2)
-// Usamos imports dinámicos o chequeamos existencia para no romper la versión web pura si se sube a un servidor
 const isTauri = typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__;
 
 export function Header() {
@@ -29,9 +28,12 @@ export function Header() {
         const { save } = await import("@tauri-apps/plugin-dialog");
         const { writeTextFile, writeFile } = await import("@tauri-apps/plugin-fs");
 
+        const extension = fileName.split(".").pop() || "*";
+        const filterName = extension === "json" ? "Análisis Sintáctico" : "Imagen PNG";
+
         const path = await save({
           defaultPath: fileName,
-          filters: [{ name: "Archivo", extensions: [fileName.split(".").pop() || "*"] }]
+          filters: [{ name: filterName, extensions: [extension] }]
         });
 
         if (path) {
@@ -108,7 +110,32 @@ export function Header() {
     }
   };
 
-  const handleImportClick = () => {
+  const handleImportClick = async () => {
+    if (isTauri) {
+      try {
+        const { open } = await import("@tauri-apps/plugin-dialog");
+        const { readTextFile } = await import("@tauri-apps/plugin-fs");
+
+        const selected = await open({
+          multiple: false,
+          filters: [{ name: "Análisis Sintáctico", extensions: ["json"] }]
+        });
+
+        if (selected && !Array.isArray(selected)) {
+          const contents = await readTextFile(selected);
+          const json = JSON.parse(contents);
+          if (json.phrase && json.tokens && json.spans) {
+            loadAnalysis(json);
+          } else {
+            alert("El archivo JSON no tiene un formato de análisis válido.");
+          }
+        }
+        return;
+      } catch (err) {
+        console.error("Error importing via Tauri", err);
+        alert("Error al importar: " + (err instanceof Error ? err.message : String(err)));
+      }
+    }
     fileInputRef.current?.click();
   };
 
