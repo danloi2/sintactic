@@ -1,10 +1,10 @@
-import { cn } from "@/lib/utils";
-import { Span } from "@/types";
+import { cn } from "../../lib/utils";
+import { Span } from "../../types";
 import { LevelIndicator } from "./LevelIndicator";
 import { SyntacticSpan } from "./SyntacticSpan";
-import { getTagsForLanguage } from "@/data/tags";
+import { getTagsForLanguage } from "@/features/tags/tagRegistry";
 import { useRef, useLayoutEffect, useState } from "react";
-import { useAnalysisStore } from "@/store";
+import { useAnalysisStore } from "../../store";
 
 interface LayerRowProps {
   layerNum: number;

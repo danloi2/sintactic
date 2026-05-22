@@ -1,6 +1,6 @@
-import { Token as TokenType } from "@/types";
-import { useAnalysisStore, useUIStore } from "@/store";
-import { cn } from "@/lib/utils";
+import { Token as TokenType } from "../types";
+import { useAnalysisStore, useUIStore } from "../store";
+import { cn } from "../lib/utils";
 
 interface TokenProps {
   token: TokenType;

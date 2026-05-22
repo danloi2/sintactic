@@ -1,8 +1,9 @@
-import { useState, useCallback, useRef, KeyboardEvent, useEffect } from "react";
-import { useAnalysisStore } from "@/store";
+import { useState, useCallback, useRef, KeyboardEvent, useEffect, useMemo } from "react";
+import { useAnalysisStore } from "@/core/store/analysisStore";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@/core/lib/utils";
 import { Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
+import { getLanguageConfig } from "@/languages";
 
 interface LTMatch {
   message: string;
@@ -12,25 +13,6 @@ interface LTMatch {
   rule: { description: string };
 }
 
-const UI = {
-  es: {
-    placeholder: "Escribe una oración para analizar...\nEjemplo: El perro come rápidamente en el parque",
-    checking: "Revisando...",
-    errors: (n: number) => `${n} ${n === 1 ? "error" : "errores"}`,
-    hint: "Enter para analizar",
-    button: "Analizar",
-    lang: "es" as const,
-  },
-  eu: {
-    placeholder: "Idatzi aztertzeko esaldi bat...\nAdibidea: Mutilak parkean azkar jaten du",
-    checking: "Aztertzen...",
-    errors: (n: number) => `${n} ${n === 1 ? "akats" : "akats"}`,
-    hint: "Enter analisia egiteko",
-    button: "Aztertu",
-    lang: "eu" as const,
-  },
-};
-
 export function PhraseInput() {
   const { phrase, setPhrase, analyze, isAnalyzed, language } = useAnalysisStore();
   const [localPhrase, setLocalPhrase] = useState(phrase);
@@ -38,7 +20,7 @@ export function PhraseInput() {
   const [isChecking, setIsChecking] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const t = UI[language ?? "es"];
+  const ui = useMemo(() => getLanguageConfig(language).ui, [language]);
 
   const checkGrammar = useCallback(
     async (text: string, lang: "es" | "eu") => {
@@ -70,7 +52,7 @@ export function PhraseInput() {
     setLocalPhrase(val);
     setLtMatches([]);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => checkGrammar(val, t.lang), 900);
+    debounceRef.current = setTimeout(() => checkGrammar(val, language), 900);
   };
 
   useEffect(() => {
@@ -111,7 +93,7 @@ export function PhraseInput() {
           value={localPhrase}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          placeholder={t.placeholder}
+          placeholder={ui.phraseInputPlaceholder}
           className={cn(
             "input-area min-h-[120px] text-lg w-full resize-none",
             "focus:outline-none focus:ring-2 focus:ring-ring",
@@ -119,26 +101,26 @@ export function PhraseInput() {
           )}
           rows={3}
           spellCheck
-          lang={t.lang}
+          lang={language}
         />
 
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
-          {isChecking && (
+            {isChecking && (
             <span className="text-xs text-muted-foreground animate-pulse">
-              {t.checking}
+              {ui.phraseInputChecking}
             </span>
           )}
           {!isChecking && localPhrase.trim().length > 0 && !hasErrors && (
             <CheckCircle2 className="w-4 h-4 text-green-500" />
           )}
-          {!isChecking && hasErrors && (
+            {!isChecking && hasErrors && (
             <span className="flex items-center gap-1 text-xs font-medium text-destructive">
               <AlertCircle className="w-4 h-4" />
-              {t.errors(ltMatches.length)}
+              {ui.phraseInputErrors(ltMatches.length)}
             </span>
           )}
           <span className="text-xs text-muted-foreground hidden sm:block">
-            {t.hint}
+            {ui.phraseInputHint}
           </span>
           <Button
             onClick={handleAnalyze}
@@ -147,7 +129,7 @@ export function PhraseInput() {
             className="gap-2"
           >
             <Sparkles className="h-4 w-4" />
-            {t.button}
+            {ui.phraseInputAnalyzeButton}
           </Button>
         </div>
       </div>

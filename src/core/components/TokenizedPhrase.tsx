@@ -1,12 +1,13 @@
 import { useCallback, useMemo, useRef } from "react";
-import { useAnalysisStore, useUIStore } from "@/store";
+import { useAnalysisStore } from "@/core/store/analysisStore";
+import { useUIStore } from "@/core/store/uiStore";
 import { Token } from "./Token";
-import { cn } from "@/lib/utils";
+import { cn } from "@/core/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { SelectionBox } from "./parts/SelectionBox";
 import { LayerRow } from "./parts/LayerRow";
-import { useSelection } from "@/hooks/useSelection";
+import { useSelection } from "@/core/hooks/useSelection";
 
 const SIDEBAR_W = 160;
 const MIN_TOKEN_W = 110;

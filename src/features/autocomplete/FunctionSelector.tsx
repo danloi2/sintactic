@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { useAnalysisStore, useUIStore } from "@/store";
-import { Tag, TagCategory } from "@/types";
-import { getTagsForLanguage } from "@/data/tags";
-import { cn } from "@/lib/utils";
+import { useAnalysisStore, useUIStore } from "@/core/store";
+import { Tag, TagCategory } from "@/core/types";
+import { getTagsForLanguage } from "@/features/tags/tagRegistry";
+import { cn } from "@/core/lib/utils";
 import { X, Search } from "lucide-react";
-import { VerbSelector } from "@/components/autocomplete/VerbSelector";
+import { VerbSelector } from "@/languages/eu/VerbSelector";
 
 interface FunctionSelectorProps {
   className?: string;

@@ -1,8 +1,8 @@
 import { Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Tag, Span } from "@/types";
+import { cn } from "../../lib/utils";
+import { Tag, Span } from "../../types";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { useAnalysisStore, useUIStore } from "@/store";
+import { useAnalysisStore, useUIStore } from "../../store";
 
 // Margen horizontal interno para separar visualmente spans adyacentes
 const INSET = 8; // px
@@ -54,13 +54,11 @@ export function SyntacticSpan({
     borderRightWidth: "2px",
     borderBottomWidth: "2px",
     borderRadius: "0 0 8px 8px",
-    height: "14px",  // bracket más corto para acercarlo a la etiqueta
+    height: "14px",
     left: isSingleToken ? "calc(50% - 12px)" : INSET,
     right: isSingleToken ? "calc(50% - 12px)" : INSET,
   };
 
-  // Para que la etiqueta esté a la misma distancia visual, su posición "top" 
-  // debe depender de si dibujamos una línea (termina en 12px) o un bracket (termina en 26px).
   const labelTop = isTopLine ? "16px" : "30px";
 
   return (

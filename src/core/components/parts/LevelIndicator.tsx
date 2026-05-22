@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
-import { useAnalysisStore } from "@/store";
+import { cn } from "../../lib/utils";
+import { useAnalysisStore } from "../../store";
 import { useState } from "react";
 
 interface LevelIndicatorProps {

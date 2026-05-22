@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { Tag } from "@/types";
-import { filterTags } from "@/data/tags";
-import { useAnalysisStore, useUIStore } from "@/store";
+import { Tag } from "@/core/types";
+import { filterTags } from "../tags/tagRegistry";
+import { useTagFlow } from "../tags/useTagFlow";
+import { useUIStore } from "@/core/store/uiStore";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@/core/lib/utils";
 import { Search } from "lucide-react";
 
 interface AutocompleteProps {
@@ -11,14 +12,19 @@ interface AutocompleteProps {
 }
 
 export function Autocomplete({ className }: AutocompleteProps) {
-  const { addSpan, setPendingSpan, language } = useAnalysisStore();
+  const {
+    language,
+    selectedTokenIds,
+    categoryLabels,
+    handleSelectTag,
+    config,
+  } = useTagFlow();
+
   const {
     isAutocompleteOpen,
     setAutocompleteOpen,
     autocompleteQuery,
     setAutocompleteQuery,
-    selectedTokenIds,
-    clearSelection,
   } = useUIStore();
 
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -38,39 +44,13 @@ export function Autocomplete({ className }: AutocompleteProps) {
     setSelectedIndex(0);
   }, [autocompleteQuery]);
 
-  const handleSelectTag = useCallback(
+  const onSelect = useCallback(
     (tag: Tag) => {
-      if (selectedTokenIds.length > 0) {
-        if (
-          tag.category === "phrase" ||
-          ["nucleo", "enlace", "nexo", "modificador", "eu-n", "eu-p"].includes(
-            tag.id
-          )
-        ) {
-          // Iniciar flujo de múltiples pasos (Step 1)
-          setPendingSpan({ tagId: tag.id, tokenIds: selectedTokenIds });
-        } else {
-          // Otros, agregar directamente
-          addSpan(
-            tag.id,
-            selectedTokenIds,
-            undefined,
-            tag.category === "structure"
-          );
-        }
-        clearSelection();
-      }
+      handleSelectTag(tag);
       setAutocompleteOpen(false);
       setAutocompleteQuery("");
     },
-    [
-      selectedTokenIds,
-      addSpan,
-      setPendingSpan,
-      clearSelection,
-      setAutocompleteOpen,
-      setAutocompleteQuery,
-    ]
+    [handleSelectTag, setAutocompleteOpen, setAutocompleteQuery]
   );
 
   const handleKeyDown = useCallback(
@@ -89,7 +69,7 @@ export function Autocomplete({ className }: AutocompleteProps) {
         case "Enter":
           e.preventDefault();
           if (filteredTags[selectedIndex]) {
-            handleSelectTag(filteredTags[selectedIndex]);
+            onSelect(filteredTags[selectedIndex]);
           }
           break;
         case "Escape":
@@ -99,7 +79,7 @@ export function Autocomplete({ className }: AutocompleteProps) {
           break;
       }
     },
-    [filteredTags, selectedIndex, handleSelectTag, setAutocompleteOpen, setAutocompleteQuery]
+    [filteredTags, selectedIndex, onSelect, setAutocompleteOpen, setAutocompleteQuery]
   );
 
   const handleContainerClick = useCallback(
@@ -136,7 +116,7 @@ export function Autocomplete({ className }: AutocompleteProps) {
             value={autocompleteQuery}
             onChange={(e) => setAutocompleteQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Escribe para buscar etiquetas..."
+            placeholder={config.ui.autocompletePlaceholder}
             className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
             autoComplete="off"
           />
@@ -155,7 +135,7 @@ export function Autocomplete({ className }: AutocompleteProps) {
         {!hasSelection && (
           <div className="px-3 py-2 bg-destructive/10 border-b border-destructive/20">
             <p className="text-xs text-destructive">
-              Selecciona uno o más tokens primero
+              {config.ui.autocompleteWarningSelectTokens}
             </p>
           </div>
         )}
@@ -172,12 +152,7 @@ export function Autocomplete({ className }: AutocompleteProps) {
                   <div key={tag.id}>
                     {showHeader && (
                       <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 bg-muted/30 sticky top-0 z-10 backdrop-blur-sm border-y border-border/50 first:border-t-0">
-                        {tag.category === "sentence" && "Oraciones"}
-                        {tag.category === "phrase" && "Sintagmas"}
-                        {tag.category === "connector" && "Conectores"}
-                        {tag.category === "function" && "Funciones"}
-                        {tag.category === "structure" && "Estructura"}
-                        {tag.category === "morphology" && "Morfología"}
+                        {categoryLabels[tag.category] || tag.category}
                       </div>
                     )}
                     <button
@@ -185,7 +160,7 @@ export function Autocomplete({ className }: AutocompleteProps) {
                         "w-full text-left flex items-center gap-3 px-3 py-2.5 transition-all duration-200 rounded-md",
                         index === selectedIndex ? "bg-primary text-primary-foreground shadow-md scale-[1.02] z-20" : "hover:bg-accent text-foreground"
                       )}
-                      onClick={() => handleSelectTag(tag)}
+                      onClick={() => onSelect(tag)}
                       onMouseEnter={() => setSelectedIndex(index)}
                       ref={index === selectedIndex ? (el) => el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }) : null}
                     >
@@ -213,14 +188,16 @@ export function Autocomplete({ className }: AutocompleteProps) {
           ) : (
             <div className="px-3 py-12 text-center text-muted-foreground">
               <Search className="h-8 w-8 mx-auto mb-3 opacity-20" />
-              <p className="text-sm">No se encontraron etiquetas para "{autocompleteQuery}"</p>
+              <p className="text-sm">
+                {config.ui.autocompleteEmptyState(autocompleteQuery)}
+              </p>
             </div>
           )}
         </div>
 
         <div className="px-3 py-2 border-t border-border bg-muted/30">
           <p className="text-xs text-muted-foreground">
-            ↑↓ Navegar · Enter seleccionar · Esc cerrar
+            {config.ui.autocompleteFooterHint}
           </p>
         </div>
       </div>

@@ -1,5 +1,5 @@
-import { useCallback, useRef } from "react";
-import { useAnalysisStore, useUIStore } from "@/store";
+import { useCallback, useMemo, useRef } from "react";
+import { useAnalysisStore, useUIStore } from "@/core/store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,8 +24,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import { AppLanguage } from "@/types";
+import { cn } from "@/core/lib/utils";
+import { AppLanguage } from "@/core/types";
+import { getLanguageConfig } from "@/languages";
 
 // Tauri imports (v2)
 const isTauri =
@@ -49,7 +50,7 @@ function LangToggle({ language, onChange }: LangToggleProps) {
     <button
       id="lang-toggle"
       onClick={handleClick}
-      title={isEU ? "Aldatu gaztelaniara" : "Cambiar a Euskara"}
+      title={getLanguageConfig(language).ui.headerToggleLanguageTitle}
       className={cn(
         "relative flex items-center h-8 rounded-full border-2 transition-all duration-300 select-none",
         "px-1 gap-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -108,14 +109,14 @@ export function Header() {
     useUIStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const config = useMemo(() => getLanguageConfig(language), [language]);
+  const ui = config.ui;
+
   const handleLanguageChange = useCallback(
     (lang: AppLanguage) => {
       if (isAnalyzed) {
-        const msg =
-          lang === "eu"
-            ? "Euskarara aldatzean analisia berrezarriko da. Jarraitu?"
-            : "Al cambiar a Español se reiniciará el análisis. ¿Continuar?";
-        if (!window.confirm(msg)) return;
+        const targetConfig = getLanguageConfig(lang);
+        if (!window.confirm(targetConfig.ui.headerLangChangeConfirm)) return;
         reset();
       }
       setLanguage(lang);
@@ -331,8 +332,6 @@ export function Header() {
     e.target.value = "";
   };
 
-  const isEU = language === "eu";
-
   return (
     <TooltipProvider>
       <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 sticky top-0 z-50">
@@ -345,7 +344,7 @@ export function Header() {
               variant="secondary"
               className="text-xs font-bold bg-primary/10 text-primary border-primary/20"
             >
-              {new Set(tokens.filter(t => !t.isImplicit).map(t => t.wordId)).size} {isEU ? "HITZ" : "PALABRAS"}
+              {new Set(tokens.filter(t => !t.isImplicit).map(t => t.wordId)).size} {ui.headerWordsLabel}
             </Badge>
           )}
         </div>
@@ -366,12 +365,12 @@ export function Header() {
               >
                 <Layers className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline font-bold">
-                  {isEU ? "Etiketak" : "Etiquetas"}
+                  {ui.headerTagsPanelLabel}
                 </span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{isEU ? "Etiketa panela ireki" : "Abrir panel de etiquetas"}</p>
+              <p>{ui.headerTagsPanelTooltip}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -385,12 +384,12 @@ export function Header() {
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline font-bold">
-                  {isEU ? "Berrabiarazi" : "Reiniciar"}
+                  {ui.headerResetLabel}
                 </span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{isEU ? "Analisia berrabiarazi" : "Reiniciar análisis"}</p>
+              <p>{ui.headerResetTooltip}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -408,13 +407,13 @@ export function Header() {
                   >
                     <Download className="h-4 w-4 mr-2" />
                     <span className="hidden sm:inline font-bold">
-                      {isEU ? "Esportatu" : "Exportar"}
+                      {ui.headerExportLabel}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{isEU ? "Deskargatu (PNG/JSON)" : "Descargar análisis (PNG/JSON)"}</p>
+                <p>{ui.headerExportTooltip}</p>
               </TooltipContent>
             </Tooltip>
             <DropdownMenuContent align="end" className="w-56 p-2">
@@ -423,14 +422,14 @@ export function Header() {
                 onClick={exportAsImage}
               >
                 <ImageIcon className="w-4 h-4 text-primary" />
-                {isEU ? "Irudi gisa deskargatu" : "Descargar como Imagen"}
+                {ui.headerExportImageLabel}
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="gap-3 p-3 cursor-pointer rounded-md font-bold"
                 onClick={exportAsJSON}
               >
                 <FileJson className="w-4 h-4 text-primary" />
-                {isEU ? "JSON gisa deskargatu" : "Descargar como JSON"}
+                {ui.headerExportJsonLabel}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -441,7 +440,7 @@ export function Header() {
               <Button variant="ghost" size="sm" onClick={handleImportClick}>
                 <Upload className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline font-bold">
-                  {isEU ? "Inportatu" : "Importar"}
+                  {ui.headerImportLabel}
                 </span>
                 <input
                   type="file"
@@ -453,11 +452,7 @@ export function Header() {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>
-                {isEU
-                  ? "JSON fitxategitik kargatu"
-                  : "Cargar análisis desde un archivo JSON"}
-              </p>
+              <p>{ui.headerImportTooltip}</p>
             </TooltipContent>
           </Tooltip>
         </div>

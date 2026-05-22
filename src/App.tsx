@@ -1,26 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAnalysisStore, useUIStore } from "@/store";
-import { Header } from "@/components/layout/Header";
-import { PhraseInput } from "@/components/analysis/PhraseInput";
-import { TokenizedPhrase } from "@/components/analysis/TokenizedPhrase";
-import { TagPanel } from "@/components/analysis/TagsPanel";
-import { Autocomplete } from "@/components/autocomplete/Autocomplete";
-import { FunctionSelector } from "@/components/autocomplete/FunctionSelector";
-import { cn } from "@/lib/utils";
+import { Header } from "@/core/components/layout/Header";
+import { PhraseInput } from "@/features/analysis/PhraseInput";
+import { TokenizedPhrase } from "@/core/components/TokenizedPhrase";
+import { TagPanel } from "@/features/panel/TagsPanel";
+import { Autocomplete } from "@/features/autocomplete/Autocomplete";
+import { FunctionSelector } from "@/features/autocomplete/FunctionSelector";
+import { cn } from "@/core/lib/utils";
 import { ChevronUp, ChevronDown, Plus, Minus, UserX, Check, X } from "lucide-react";
-
-const UI = {
-  es: {
-    title: "Análisis de la oración",
-    shortcutPrompt: "para agregar etiqueta",
-    tokensSelected: (n: number) => `${n} letra${n !== 1 ? "s" : ""} seleccionada${n !== 1 ? "s" : ""}`,
-  },
-  eu: {
-    title: "Esaldiari buruzko analisia",
-    shortcutPrompt: "etiketa gehitzeko",
-    tokensSelected: (n: number) => `${n} hizki hautatuta`,
-  }
-};
+import { getLanguageConfig } from "@/languages";
 
 export function App() {
   const { isAnalyzed, language, currentLayer, setCurrentLayer, removeLayer, addImplicitToken } = useAnalysisStore();
@@ -28,6 +16,8 @@ export function App() {
   const [showImplicitInput, setShowImplicitInput] = useState(false);
   const [implicitText, setImplicitText] = useState("");
   const implicitInputRef = useRef<HTMLInputElement>(null);
+
+  const ui = useMemo(() => getLanguageConfig(language ?? "es").ui, [language]);
 
   const handleAddImplicit = () => {
     setShowImplicitInput(true);
@@ -63,8 +53,6 @@ export function App() {
     };
   }, [handleKeyDown]);
 
-  const t = UI[language ?? "es"];
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
@@ -83,7 +71,7 @@ export function App() {
               {/* ── Barra de título + controles de nivel ── */}
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <h2 className="text-base font-semibold text-foreground leading-none">
-                  {t.title}
+                  {ui.appTitle}
                 </h2>
 
                 {/* Controles compactos: nivel actual + Ø */}
@@ -163,9 +151,9 @@ export function App() {
 
               {selectedTokenIds.length > 0 && (
                 <div className="text-xs text-muted-foreground">
-                  {t.tokensSelected(selectedTokenIds.length)}. Presiona{" "}
+                  {ui.appTokensSelected(selectedTokenIds.length)}. Presiona{" "}
                   <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+E</kbd>{" "}
-                  {t.shortcutPrompt}.
+                  {ui.appShortcutPrompt}.
                 </div>
               )}
             </div>
