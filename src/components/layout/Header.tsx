@@ -1,3 +1,4 @@
+import { useCallback, useRef } from "react";
 import { useAnalysisStore, useUIStore } from "@/store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,33 +9,136 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
-import { Layers, Download, Upload, RotateCcw, Image as ImageIcon, FileJson } from "lucide-react";
+import {
+  Layers,
+  Download,
+  Upload,
+  RotateCcw,
+  Image as ImageIcon,
+  FileJson,
+} from "lucide-react";
 import { toPng } from "html-to-image";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { useRef } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { AppLanguage } from "@/types";
 
 // Tauri imports (v2)
-const isTauri = typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__;
+const isTauri =
+  typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__;
 
+// ── Language toggle slider ──────────────────────────────────────────────────
+interface LangToggleProps {
+  language: AppLanguage;
+  onChange: (lang: AppLanguage) => void;
+}
+
+function LangToggle({ language, onChange }: LangToggleProps) {
+  const isEU = language === "eu";
+
+  const handleClick = useCallback(() => {
+    const next: AppLanguage = isEU ? "es" : "eu";
+    onChange(next);
+  }, [isEU, onChange]);
+
+  return (
+    <button
+      id="lang-toggle"
+      onClick={handleClick}
+      title={isEU ? "Aldatu gaztelaniara" : "Cambiar a Euskara"}
+      className={cn(
+        "relative flex items-center h-8 rounded-full border-2 transition-all duration-300 select-none",
+        "px-1 gap-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        isEU
+          ? "border-green-500/60 bg-green-950/40"
+          : "border-primary/40 bg-primary/5"
+      )}
+      style={{ minWidth: 88 }}
+      aria-pressed={isEU}
+    >
+      {/* Sliding pill */}
+      <span
+        className={cn(
+          "absolute top-0.5 bottom-0.5 w-10 rounded-full transition-all duration-300 shadow-md",
+          isEU
+            ? "translate-x-[calc(100%-2px)] bg-green-500"
+            : "translate-x-0 bg-primary"
+        )}
+        style={{ left: 2 }}
+      />
+
+      {/* Labels */}
+      <span
+        className={cn(
+          "relative z-10 text-[11px] font-black w-10 text-center transition-colors duration-200",
+          !isEU ? "text-white" : "text-muted-foreground"
+        )}
+      >
+        ES
+      </span>
+      <span
+        className={cn(
+          "relative z-10 text-[11px] font-black w-10 text-center transition-colors duration-200",
+          isEU ? "text-white" : "text-muted-foreground"
+        )}
+      >
+        EU
+      </span>
+    </button>
+  );
+}
+
+// ── Header ──────────────────────────────────────────────────────────────────
 export function Header() {
-  const { reset, isAnalyzed, phrase, tokens, spans, loadAnalysis } = useAnalysisStore();
-  const { isTagPanelOpen, setTagPanelOpen, isExporting, setExporting } = useUIStore();
+  const {
+    reset,
+    isAnalyzed,
+    phrase,
+    tokens,
+    spans,
+    loadAnalysis,
+    language,
+    setLanguage,
+  } = useAnalysisStore();
+  const { isTagPanelOpen, setTagPanelOpen, isExporting, setExporting } =
+    useUIStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLanguageChange = useCallback(
+    (lang: AppLanguage) => {
+      if (isAnalyzed) {
+        const msg =
+          lang === "eu"
+            ? "Euskarara aldatzean analisia berrezarriko da. Jarraitu?"
+            : "Al cambiar a Español se reiniciará el análisis. ¿Continuar?";
+        if (!window.confirm(msg)) return;
+        reset();
+      }
+      setLanguage(lang);
+    },
+    [isAnalyzed, reset, setLanguage]
+  );
 
   const saveFile = async (dataUrl: string | Blob, fileName: string) => {
     // Escenario Desktop (Tauri)
     if (isTauri) {
       try {
         const { save } = await import("@tauri-apps/plugin-dialog");
-        const { writeTextFile, writeFile } = await import("@tauri-apps/plugin-fs");
+        const { writeTextFile, writeFile } = await import(
+          "@tauri-apps/plugin-fs"
+        );
 
         const extension = fileName.split(".").pop() || "*";
-        const filterName = extension === "json" ? "Análisis Sintáctico" : "Imagen PNG";
+        const filterName =
+          extension === "json" ? "Análisis Sintáctico" : "Imagen PNG";
 
         const path = await save({
           defaultPath: fileName,
-          filters: [{ name: filterName, extensions: [extension] }]
+          filters: [{ name: filterName, extensions: [extension] }],
         });
 
         if (path) {
@@ -43,18 +147,26 @@ export function Header() {
             const binaryData = new Uint8Array(
               atob(base64Data)
                 .split("")
-                .map(char => char.charCodeAt(0))
+                .map((char) => char.charCodeAt(0))
             );
             await writeFile(path, binaryData);
           } else {
-            await writeTextFile(path, typeof dataUrl === "string" ? dataUrl : JSON.stringify(dataUrl, null, 2));
+            await writeTextFile(
+              path,
+              typeof dataUrl === "string"
+                ? dataUrl
+                : JSON.stringify(dataUrl, null, 2)
+            );
           }
           alert("Archivo guardado correctamente");
         }
         return;
       } catch (err) {
         console.error("Error saving via Tauri", err);
-        alert("Error al guardar el archivo: " + (err instanceof Error ? err.message : String(err)));
+        alert(
+          "Error al guardar el archivo: " +
+            (err instanceof Error ? err.message : String(err))
+        );
         return;
       }
     }
@@ -63,18 +175,24 @@ export function Header() {
     if ("showSaveFilePicker" in window) {
       try {
         const extension = fileName.split(".").pop() || "json";
-        const mimeType = extension === "json" ? "application/json" : "image/png";
-        
+        const mimeType =
+          extension === "json" ? "application/json" : "image/png";
+
         const handle = await (window as any).showSaveFilePicker({
           suggestedName: fileName,
-          types: [{
-            description: extension === "json" ? "Análisis Sintáctico" : "Imagen de Análisis",
-            accept: { [mimeType]: [`.${extension}`] }
-          }]
+          types: [
+            {
+              description:
+                extension === "json"
+                  ? "Análisis Sintáctico"
+                  : "Imagen de Análisis",
+              accept: { [mimeType]: [`.${extension}`] },
+            },
+          ],
         });
-        
+
         const writable = await handle.createWritable();
-        
+
         if (typeof dataUrl === "string" && dataUrl.startsWith("data:image")) {
           const res = await fetch(dataUrl);
           const blob = await res.blob();
@@ -82,13 +200,15 @@ export function Header() {
         } else {
           await writable.write(dataUrl);
         }
-        
+
         await writable.close();
         return;
       } catch (err: any) {
-        // Si el usuario cancela, no hacemos nada. Si es otro error, fallback a descarga clásica.
         if (err.name !== "AbortError") {
-          console.error("FileSystem API error, falling back to legacy download", err);
+          console.error(
+            "FileSystem API error, falling back to legacy download",
+            err
+          );
         } else {
           return;
         }
@@ -98,7 +218,8 @@ export function Header() {
     // Fallback web clásico (Descarga directa)
     const link = document.createElement("a");
     link.download = fileName;
-    link.href = typeof dataUrl === "string" ? dataUrl : URL.createObjectURL(dataUrl);
+    link.href =
+      typeof dataUrl === "string" ? dataUrl : URL.createObjectURL(dataUrl);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -108,9 +229,11 @@ export function Header() {
   const exportAsImage = async () => {
     try {
       setExporting(true);
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 200));
 
-      const grid = document.querySelector(".token-grid-container-export") as HTMLElement;
+      const grid = document.querySelector(
+        ".token-grid-container-export"
+      ) as HTMLElement;
       if (!grid) {
         setExporting(false);
         return;
@@ -119,11 +242,14 @@ export function Header() {
       const dataUrl = await toPng(grid, {
         backgroundColor: "#ffffff",
         pixelRatio: 2,
-        style: { padding: "50px", borderRadius: "0px" }
+        style: { padding: "50px", borderRadius: "0px" },
       });
 
       setExporting(false);
-      await saveFile(dataUrl, `analisis-${phrase.substring(0, 20).replace(/\s+/g, "_")}.png`);
+      await saveFile(
+        dataUrl,
+        `analisis-${phrase.substring(0, 20).replace(/\s+/g, "_")}.png`
+      );
     } catch (err) {
       console.error("Error al exportar imagen", err);
       setExporting(false);
@@ -135,11 +261,14 @@ export function Header() {
       phrase,
       tokens,
       spans,
-      exportedAt: new Date().toISOString()
+      language,
+      exportedAt: new Date().toISOString(),
     };
     const jsonStr = JSON.stringify(data, null, 2);
-    const fileName = `analisis-${phrase.substring(0, 20).replace(/\s+/g, "_")}.json`;
-    
+    const fileName = `analisis-${phrase
+      .substring(0, 20)
+      .replace(/\s+/g, "_")}.json`;
+
     if (isTauri) {
       await saveFile(jsonStr, fileName);
     } else {
@@ -156,7 +285,7 @@ export function Header() {
 
         const selected = await open({
           multiple: false,
-          filters: [{ name: "Análisis Sintáctico", extensions: ["json"] }]
+          filters: [{ name: "Análisis Sintáctico", extensions: ["json"] }],
         });
 
         if (selected && !Array.isArray(selected)) {
@@ -171,7 +300,10 @@ export function Header() {
         return;
       } catch (err) {
         console.error("Error importing via Tauri", err);
-        alert("Error al importar: " + (err instanceof Error ? err.message : String(err)));
+        alert(
+          "Error al importar: " +
+            (err instanceof Error ? err.message : String(err))
+        );
       }
     }
     fileInputRef.current?.click();
@@ -199,19 +331,31 @@ export function Header() {
     e.target.value = "";
   };
 
+  const isEU = language === "eu";
+
   return (
     <TooltipProvider>
       <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-black text-primary tracking-tighter">Sintactic</h1>
+          <h1 className="text-xl font-black text-primary tracking-tighter">
+            Sintactic
+          </h1>
           {isAnalyzed && (
-            <Badge variant="secondary" className="text-xs font-bold bg-primary/10 text-primary border-primary/20">
-              {tokens.length} PALABRAS
+            <Badge
+              variant="secondary"
+              className="text-xs font-bold bg-primary/10 text-primary border-primary/20"
+            >
+              {new Set(tokens.filter(t => !t.isImplicit).map(t => t.wordId)).size} {isEU ? "HITZ" : "PALABRAS"}
             </Badge>
           )}
         </div>
 
         <div className="flex items-center gap-2">
+          {/* ── Language Toggle ── */}
+          <LangToggle language={language} onChange={handleLanguageChange} />
+
+          <Separator orientation="vertical" className="h-6 mx-1" />
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -221,23 +365,32 @@ export function Header() {
                 className={cn(isTagPanelOpen && "bg-primary/10 text-primary")}
               >
                 <Layers className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline font-bold">Etiquetas</span>
+                <span className="hidden sm:inline font-bold">
+                  {isEU ? "Etiketak" : "Etiquetas"}
+                </span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Abrir panel de etiquetas</p>
+              <p>{isEU ? "Etiketa panela ireki" : "Abrir panel de etiquetas"}</p>
             </TooltipContent>
           </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="sm" onClick={reset} className="hover:text-destructive transition-colors">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={reset}
+                className="hover:text-destructive transition-colors"
+              >
                 <RotateCcw className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline font-bold">Reiniciar</span>
+                <span className="hidden sm:inline font-bold">
+                  {isEU ? "Berrabiarazi" : "Reiniciar"}
+                </span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Reiniciar análisis</p>
+              <p>{isEU ? "Analisia berrabiarazi" : "Reiniciar análisis"}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -248,24 +401,36 @@ export function Header() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" disabled={!isAnalyzed || isExporting}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={!isAnalyzed || isExporting}
+                  >
                     <Download className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline font-bold">Exportar</span>
+                    <span className="hidden sm:inline font-bold">
+                      {isEU ? "Esportatu" : "Exportar"}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Descargar análisis (PNG/JSON)</p>
+                <p>{isEU ? "Deskargatu (PNG/JSON)" : "Descargar análisis (PNG/JSON)"}</p>
               </TooltipContent>
             </Tooltip>
             <DropdownMenuContent align="end" className="w-56 p-2">
-              <DropdownMenuItem className="gap-3 p-3 cursor-pointer rounded-md font-bold" onClick={exportAsImage}>
+              <DropdownMenuItem
+                className="gap-3 p-3 cursor-pointer rounded-md font-bold"
+                onClick={exportAsImage}
+              >
                 <ImageIcon className="w-4 h-4 text-primary" />
-                Descargar como Imagen
+                {isEU ? "Irudi gisa deskargatu" : "Descargar como Imagen"}
               </DropdownMenuItem>
-              <DropdownMenuItem className="gap-3 p-3 cursor-pointer rounded-md font-bold" onClick={exportAsJSON}>
+              <DropdownMenuItem
+                className="gap-3 p-3 cursor-pointer rounded-md font-bold"
+                onClick={exportAsJSON}
+              >
                 <FileJson className="w-4 h-4 text-primary" />
-                Descargar como JSON
+                {isEU ? "JSON gisa deskargatu" : "Descargar como JSON"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -275,18 +440,24 @@ export function Header() {
             <TooltipTrigger asChild>
               <Button variant="ghost" size="sm" onClick={handleImportClick}>
                 <Upload className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline font-bold">Importar</span>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileChange} 
-                  accept=".json" 
-                  className="hidden" 
+                <span className="hidden sm:inline font-bold">
+                  {isEU ? "Inportatu" : "Importar"}
+                </span>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept=".json"
+                  className="hidden"
                 />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Cargar análisis desde un archivo JSON</p>
+              <p>
+                {isEU
+                  ? "JSON fitxategitik kargatu"
+                  : "Cargar análisis desde un archivo JSON"}
+              </p>
             </TooltipContent>
           </Tooltip>
         </div>

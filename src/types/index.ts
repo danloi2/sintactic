@@ -5,9 +5,27 @@ export interface Token {
   endIndex: number;
   line: number;
   column: number;
+  /** True when this token is a single letter split from a parent word (EU mode) */
+  isLetter?: boolean;
+  /** Groups letters of the same word together visually */
+  wordId?: string;
+  /** True when this token was added manually as an omitted/implicit subject */
+  isImplicit?: boolean;
 }
 
-export type TagCategory = "function" | "phrase" | "connector" | "structure" | "sentence" | "morphology";
+export type TagCategory =
+  | "function"
+  | "phrase"
+  | "connector"
+  | "structure"
+  | "sentence"
+  | "morphology"
+  /** Basque: declension cases (Nork, Nor, Nori…) */
+  | "declension"
+  /** Basque: verb agreement paradigm (NOR, NORK, NORI with person/number) */
+  | "verbdecl";
+
+export type AppLanguage = "es" | "eu";
 
 export interface Tag {
   id: string;
@@ -30,17 +48,30 @@ export interface Selection {
 
 export interface Span {
   id: string;
-  tagId: string;        
-  functionTagId?: string; 
+  tagId: string;
+  /** Step-2 tag: declension (EU) or function (ES) */
+  functionTagId?: string;
+  /** Step-3 tag: syntactic function (EU 3-step flow only) */
+  secondaryTagId?: string;
   tokenIds: string[];
   layer: number;
   isStructure?: boolean;
   createdAt: number;
+  /** Basque verb paradigm (e.g., NOR-NORI) */
+  verbParadigm?: string;
+  /** Basque verb conjugation pronouns (e.g., Hura-Zuri) */
+  verbConjugation?: string;
 }
 
 export interface PendingSpan {
   tagId: string;
   tokenIds: string[];
+  /** Intermediate declension tag stored between step 2→3 in EU mode */
+  declinationTagId?: string;
+  /** Basque verb paradigm (e.g., NOR-NORI) */
+  verbParadigm?: string;
+  /** Basque verb conjugation pronouns (e.g., Hura-Zuri) */
+  verbConjugation?: string;
 }
 
 export interface Analysis {
@@ -56,6 +87,7 @@ export interface Analysis {
 export interface UserPreferences {
   theme: "dark" | "light";
   showShortcuts: boolean;
+  language: AppLanguage;
 }
 
 export interface PersistedState {

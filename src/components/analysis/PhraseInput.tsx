@@ -12,45 +12,71 @@ interface LTMatch {
   rule: { description: string };
 }
 
+const UI = {
+  es: {
+    placeholder: "Escribe una oración para analizar...\nEjemplo: El perro come rápidamente en el parque",
+    checking: "Revisando...",
+    errors: (n: number) => `${n} ${n === 1 ? "error" : "errores"}`,
+    hint: "Enter para analizar",
+    button: "Analizar",
+    lang: "es" as const,
+  },
+  eu: {
+    placeholder: "Idatzi aztertzeko esaldi bat...\nAdibidea: Mutilak parkean azkar jaten du",
+    checking: "Aztertzen...",
+    errors: (n: number) => `${n} ${n === 1 ? "akats" : "akats"}`,
+    hint: "Enter analisia egiteko",
+    button: "Aztertu",
+    lang: "eu" as const,
+  },
+};
+
 export function PhraseInput() {
-  const { phrase, setPhrase, analyze, isAnalyzed } = useAnalysisStore();
+  const { phrase, setPhrase, analyze, isAnalyzed, language } = useAnalysisStore();
   const [localPhrase, setLocalPhrase] = useState(phrase);
   const [ltMatches, setLtMatches] = useState<LTMatch[]>([]);
   const [isChecking, setIsChecking] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const checkGrammar = useCallback(async (text: string) => {
-    if (!text.trim() || text.trim().split(" ").length < 2) {
-      setLtMatches([]);
-      return;
-    }
-    setIsChecking(true);
-    try {
-      const params = new URLSearchParams({ language: "es", text });
-      const res = await fetch("https://api.languagetool.org/v2/check", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: params.toString(),
-      });
-      const data = await res.json();
-      setLtMatches(data.matches ?? []);
-    } catch {
-      // Silently fail — no interrumpir el flujo si la API no está disponible
-    } finally {
-      setIsChecking(false);
-    }
-  }, []);
+  const t = UI[language ?? "es"];
+
+  const checkGrammar = useCallback(
+    async (text: string, lang: "es" | "eu") => {
+      if (!text.trim() || text.trim().split(" ").length < 2) {
+        setLtMatches([]);
+        return;
+      }
+      setIsChecking(true);
+      try {
+        const params = new URLSearchParams({ language: lang, text });
+        const res = await fetch("https://api.languagetool.org/v2/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: params.toString(),
+        });
+        const data = await res.json();
+        setLtMatches(data.matches ?? []);
+      } catch {
+        // Silently fail — no interrumpir el flujo si la API no está disponible
+      } finally {
+        setIsChecking(false);
+      }
+    },
+    []
+  );
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setLocalPhrase(val);
     setLtMatches([]);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => checkGrammar(val), 900);
+    debounceRef.current = setTimeout(() => checkGrammar(val, t.lang), 900);
   };
 
   useEffect(() => {
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, []);
 
   const handleAnalyze = useCallback(() => {
@@ -85,7 +111,7 @@ export function PhraseInput() {
           value={localPhrase}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          placeholder={"Escribe una oración para analizar...\nEjemplo: El perro come rápidamente en el parque"}
+          placeholder={t.placeholder}
           className={cn(
             "input-area min-h-[120px] text-lg w-full resize-none",
             "focus:outline-none focus:ring-2 focus:ring-ring",
@@ -93,12 +119,14 @@ export function PhraseInput() {
           )}
           rows={3}
           spellCheck
-          lang="es"
+          lang={t.lang}
         />
 
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
           {isChecking && (
-            <span className="text-xs text-muted-foreground animate-pulse">Revisando...</span>
+            <span className="text-xs text-muted-foreground animate-pulse">
+              {t.checking}
+            </span>
           )}
           {!isChecking && localPhrase.trim().length > 0 && !hasErrors && (
             <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -106,11 +134,11 @@ export function PhraseInput() {
           {!isChecking && hasErrors && (
             <span className="flex items-center gap-1 text-xs font-medium text-destructive">
               <AlertCircle className="w-4 h-4" />
-              {ltMatches.length} {ltMatches.length === 1 ? "error" : "errores"}
+              {t.errors(ltMatches.length)}
             </span>
           )}
           <span className="text-xs text-muted-foreground hidden sm:block">
-            Enter para analizar
+            {t.hint}
           </span>
           <Button
             onClick={handleAnalyze}
@@ -119,7 +147,7 @@ export function PhraseInput() {
             className="gap-2"
           >
             <Sparkles className="h-4 w-4" />
-            Analizar
+            {t.button}
           </Button>
         </div>
       </div>
@@ -137,7 +165,9 @@ export function PhraseInput() {
                 <p className="font-medium text-foreground">
                   «{localPhrase.slice(match.offset, match.offset + match.length)}»
                 </p>
-                <p className="text-muted-foreground text-xs mt-0.5">{match.message}</p>
+                <p className="text-muted-foreground text-xs mt-0.5">
+                  {match.message}
+                </p>
                 {match.replacements.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {match.replacements.slice(0, 4).map((r, j) => (

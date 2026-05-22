@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
-import { Analysis, Span, Token } from "@/types";
+import { Analysis, AppLanguage, Span, Token, PendingSpan } from "@/types";
 import { tokenize } from "@/lib/tokenizer";
 
 interface AnalysisState {
@@ -11,20 +11,33 @@ interface AnalysisState {
   spans: Span[];
   currentLayer: number;
   isAnalyzed: boolean;
-  pendingSpan: { tagId: string; tokenIds: string[] } | null;
+  language: AppLanguage;
+  pendingSpan: PendingSpan | null;
 
   setPhrase: (phrase: string) => void;
+  setLanguage: (lang: AppLanguage) => void;
   analyze: () => void;
-  addSpan: (tagId: string, tokenIds: string[], functionTagId?: string, isStructure?: boolean) => void;
-  setPendingSpan: (span: { tagId: string; tokenIds: string[] } | null) => void;
+  addSpan: (
+    tagId: string,
+    tokenIds: string[],
+    functionTagId?: string,
+    isStructure?: boolean,
+    secondaryTagId?: string,
+    verbParadigm?: string,
+    verbConjugation?: string
+  ) => void;
+  setPendingSpan: (span: PendingSpan | null) => void;
   removeSpan: (spanId: string) => void;
   removeLayer: (layer: number) => void;
+  swapLayers: (layerA: number, layerB: number) => void;
   updateSpanTag: (spanId: string, tagId: string) => void;
   setCurrentLayer: (layer: number) => void;
   clearAnalysis: () => void;
-  loadAnalysis: (data: { phrase: string; tokens: Token[]; spans: Span[] }) => void;
+  loadAnalysis: (data: { phrase: string; tokens: Token[]; spans: Span[]; language?: AppLanguage }) => void;
   reset: () => void;
   getSpansForToken: (tokenId: string) => Span[];
+  addImplicitToken: (text: string) => void;
+  removeToken: (tokenId: string) => void;
 }
 
 export const useAnalysisStore = create<AnalysisState>()(
@@ -34,18 +47,23 @@ export const useAnalysisStore = create<AnalysisState>()(
       phrase: "",
       tokens: [],
       spans: [],
-      currentLayer: 1, 
+      currentLayer: 1,
       isAnalyzed: false,
+      language: "es" as AppLanguage,
       pendingSpan: null,
 
       setPhrase: (phrase: string) => {
         set({ phrase, isAnalyzed: false });
       },
 
+      setLanguage: (lang: AppLanguage) => {
+        set({ language: lang });
+      },
+
       analyze: () => {
-        const { phrase } = get();
+        const { phrase, language } = get();
         if (!phrase.trim()) return;
-        const tokens = tokenize(phrase);
+        const tokens = tokenize(phrase, language);
         const now = Date.now();
         set({
           currentAnalysis: { id: uuidv4(), phrase, tokens, spans: [], currentLayer: 1, createdAt: now, updatedAt: now },
@@ -63,7 +81,7 @@ export const useAnalysisStore = create<AnalysisState>()(
        * Rule 1 (Auto-correction): If the user selects "Subject" (Sujeto), Nominal Phrase (SN) is assumed.
        * Rule 2 (Floating Structure): Structural elements (N, Det) always float to the N+1 layer.
        */
-      addSpan: (tagId: string, tokenIds: string[], functionTagId?: string, isStructure?: boolean) => {
+      addSpan: (tagId: string, tokenIds: string[], functionTagId?: string, isStructure?: boolean, secondaryTagId?: string, verbParadigm?: string, verbConjugation?: string) => {
         const { spans, currentLayer } = get();
         if (tokenIds.length === 0) return;
 
@@ -102,10 +120,13 @@ export const useAnalysisStore = create<AnalysisState>()(
           id: uuidv4(),
           tagId: finalTagId,
           functionTagId: finalFunctionTagId,
+          secondaryTagId,
           tokenIds,
           layer: targetLayer,
           isStructure,
           createdAt: Date.now(),
+          verbParadigm,
+          verbConjugation,
         };
 
         const newSpans = [...spans, newSpan];
@@ -119,11 +140,43 @@ export const useAnalysisStore = create<AnalysisState>()(
       },
 
       setPendingSpan: (span) => set({ pendingSpan: span }),
+      addImplicitToken: (text: string) => {
+        const { tokens } = get();
+        const lastToken = tokens[tokens.length - 1];
+        const startIndex = lastToken ? lastToken.endIndex + 1 : 0;
+        const endIndex = startIndex + text.length;
+        const wordId = uuidv4();
+        
+        const newToken: Token = {
+          id: uuidv4(),
+          text,
+          startIndex,
+          endIndex,
+          line: 1,
+          column: startIndex,
+          isLetter: false, // Implicit tokens are always treated as whole words
+          wordId,
+          isImplicit: true,
+        };
+        
+        set({ tokens: [...tokens, newToken] });
+      },
       removeSpan: (spanId: string) => set({ spans: get().spans.filter((s) => s.id !== spanId) }),
       removeLayer: (layer: number) => {
         set({
-          spans: get().spans.filter((s) => s.layer !== layer),
-          currentLayer: Math.max(1, layer - 1)
+          spans: get().spans
+            .filter((s) => s.layer !== layer)
+            .map((s) => s.layer > layer ? { ...s, layer: s.layer - 1 } : s),
+          currentLayer: Math.max(1, get().currentLayer > layer ? get().currentLayer - 1 : get().currentLayer)
+        });
+      },
+      swapLayers: (layerA: number, layerB: number) => {
+        set({
+          spans: get().spans.map((s) => {
+            if (s.layer === layerA) return { ...s, layer: layerB };
+            if (s.layer === layerB) return { ...s, layer: layerA };
+            return s;
+          })
         });
       },
       updateSpanTag: (spanId: string, tagId: string) => set({ spans: get().spans.map((s) => s.id === spanId ? { ...s, tagId } : s) }),
@@ -134,6 +187,7 @@ export const useAnalysisStore = create<AnalysisState>()(
           phrase: data.phrase,
           tokens: data.tokens,
           spans: data.spans,
+          language: data.language || "es", // Recuperar idioma o ES por defecto
           isAnalyzed: true,
           currentLayer: 1, // Reset to level 1 for safety
           currentAnalysis: {
@@ -148,8 +202,14 @@ export const useAnalysisStore = create<AnalysisState>()(
         });
       },
 
-      reset: () => set({ currentAnalysis: null, phrase: "", tokens: [], spans: [], currentLayer: 1, isAnalyzed: false, pendingSpan: null }),
+      reset: () => set({ currentAnalysis: null, phrase: "", tokens: [], spans: [], currentLayer: 1, isAnalyzed: false, pendingSpan: null, language: get().language }),
       getSpansForToken: (tokenId: string) => get().spans.filter((s) => s.tokenIds.includes(tokenId)),
+      removeToken: (tokenId: string) => {
+        set({
+          tokens: get().tokens.filter((t) => t.id !== tokenId),
+          spans: get().spans.filter((s) => !s.tokenIds.includes(tokenId)),
+        });
+      },
     }),
     {
       name: "sintactic-analysis",
@@ -161,6 +221,7 @@ export const useAnalysisStore = create<AnalysisState>()(
         spans: state.spans,
         currentLayer: state.currentLayer,
         isAnalyzed: state.isAnalyzed,
+        language: state.language,
       }),
     }
   )

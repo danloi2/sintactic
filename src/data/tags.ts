@@ -1,4 +1,5 @@
-import { Tag } from "@/types";
+import { Tag, AppLanguage } from "@/types";
+import { euTags } from "./tags.eu";
 
 export const tags: Tag[] = [
   // 1. Tipos de sintagmas (phrase)
@@ -519,21 +520,40 @@ export const findTagByAlias = (query: string): Tag | undefined => {
   );
 };
 
-const CATEGORY_ORDER: Record<Tag["category"], number> = {
+const CATEGORY_ORDER_ES: Record<string, number> = {
   sentence: 1,
   phrase: 2,
   connector: 3,
   function: 4,
   structure: 5,
   morphology: 6,
+  declension: 7,
+  verbdecl: 8,
 };
 
-export const filterTags = (query: string): Tag[] => {
-  const lowerQuery = query.toLowerCase().trim();
-  let result = tags;
+const CATEGORY_ORDER_EU: Record<string, number> = {
+  phrase: 1,
+  function: 2,
+  declension: 3,
+  morphology: 4,
+  structure: 5,
+  verbdecl: 6,
+  sentence: 7,
+  connector: 8,
+};
 
+/** Returns the correct tag list for the selected UI language. */
+export const getTagsForLanguage = (lang: AppLanguage): Tag[] =>
+  lang === "eu" ? euTags : tags;
+
+export const filterTags = (query: string, lang: AppLanguage = "es"): Tag[] => {
+  const lowerQuery = query.toLowerCase().trim();
+  const source = getTagsForLanguage(lang);
+  const order = lang === "eu" ? CATEGORY_ORDER_EU : CATEGORY_ORDER_ES;
+
+  let result = source;
   if (lowerQuery) {
-    result = tags.filter(
+    result = source.filter(
       (tag) =>
         tag.label.toLowerCase().includes(lowerQuery) ||
         tag.short.toLowerCase().includes(lowerQuery) ||
@@ -542,5 +562,7 @@ export const filterTags = (query: string): Tag[] => {
     );
   }
 
-  return [...result].sort((a, b) => CATEGORY_ORDER[a.category] - CATEGORY_ORDER[b.category]);
+  return [...result].sort(
+    (a, b) => (order[a.category] ?? 99) - (order[b.category] ?? 99)
+  );
 };

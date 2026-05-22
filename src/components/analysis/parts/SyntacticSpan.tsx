@@ -11,9 +11,10 @@ interface SyntacticSpanProps {
   span: Span;
   tag: Tag;
   funcTag: Tag | null | undefined;
+  secTag: Tag | null | undefined;
   isTopLine: boolean;
   displayColor: string;
-  colWidth: number; // ancho real de columna en px, pasado desde LayerRow
+  rect: { left: number; width: number };
   isExportMode?: boolean;
 }
 
@@ -21,34 +22,23 @@ export function SyntacticSpan({
   span,
   tag,
   funcTag,
+  secTag,
   isTopLine,
   displayColor,
-  colWidth,
+  rect,
   isExportMode,
 }: SyntacticSpanProps) {
-  const { tokens, removeSpan } = useAnalysisStore();
+  const { removeSpan } = useAnalysisStore();
   const { activeSpanId, setActiveSpanId } = useUIStore();
 
-  const tokenIndices = span.tokenIds
-    .map((id) => tokens.findIndex((t) => t.id === id))
-    .filter((idx) => idx !== -1);
-
-  if (tokenIndices.length === 0) return null;
-
-  const minIdx = Math.min(...tokenIndices);
-  const maxIdx = Math.max(...tokenIndices);
-  const spanCount = maxIdx - minIdx + 1;
-  const isSingleToken = spanCount === 1;
-
-  const left = minIdx * colWidth;
-  const width = spanCount * colWidth;
-
   const isActive = activeSpanId === span.id;
+  const isSingleToken = span.tokenIds.length === 1;
+  const { left, width } = rect;
 
   // Línea horizontal: con inset para no pegarse a span contiguo
   const lineStyle: React.CSSProperties = {
     position: "absolute",
-    top: "44px",
+    top: "12px",
     borderColor: displayColor,
     borderTopWidth: "2px",
     left: INSET,
@@ -58,16 +48,20 @@ export function SyntacticSpan({
   // U-bracket: inset mayor para que se vea la separación
   const bracketStyle: React.CSSProperties = {
     position: "absolute",
-    top: "44px",
+    top: "12px",
     borderColor: displayColor,
     borderLeftWidth: "2px",
     borderRightWidth: "2px",
     borderBottomWidth: "2px",
     borderRadius: "0 0 8px 8px",
-    height: "40px",  // bracket más alto → más separación con la etiqueta
+    height: "14px",  // bracket más corto para acercarlo a la etiqueta
     left: isSingleToken ? "calc(50% - 12px)" : INSET,
     right: isSingleToken ? "calc(50% - 12px)" : INSET,
   };
+
+  // Para que la etiqueta esté a la misma distancia visual, su posición "top" 
+  // debe depender de si dibujamos una línea (termina en 12px) o un bracket (termina en 26px).
+  const labelTop = isTopLine ? "16px" : "30px";
 
   return (
     <div
@@ -83,7 +77,7 @@ export function SyntacticSpan({
       {/* Etiqueta centrada */}
       <div
         className="absolute flex items-center justify-center"
-        style={{ top: "96px", left: 0, right: 0 }}
+        style={{ top: labelTop, left: 0, right: 0 }}
       >
         <Tooltip>
           <TooltipTrigger asChild>
@@ -111,6 +105,17 @@ export function SyntacticSpan({
                   {funcTag.short}
                 </span>
               )}
+              {secTag && (
+                <span className="opacity-90 border-l-2 pl-1.5 border-current ml-1 text-[11px] font-bold">
+                  {secTag.short}
+                </span>
+              )}
+              {span.verbParadigm && (
+                <span className="opacity-90 border-l-2 pl-1.5 border-current ml-1 text-[11px] font-bold flex flex-col leading-tight">
+                  <span>{span.verbParadigm}</span>
+                  {span.verbConjugation && <span className="font-normal opacity-80">{span.verbConjugation}</span>}
+                </span>
+              )}
               {isActive && !isExportMode && (
                 <button
                   onClick={(e) => {
@@ -136,12 +141,34 @@ export function SyntacticSpan({
                     <span className="font-bold text-primary">{funcTag.label}</span>
                   </>
                 )}
+                {secTag && (
+                  <>
+                    <span className="text-muted-foreground">/</span>
+                    <span className="font-bold text-primary">{secTag.label}</span>
+                  </>
+                )}
+                {span.verbParadigm && (
+                  <>
+                    <span className="text-muted-foreground">/</span>
+                    <span className="font-bold text-primary">{span.verbParadigm}</span>
+                  </>
+                )}
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {tag.description}
                 {funcTag && (
                   <span className="block mt-1 pt-1 border-t border-border">
-                    <strong className="text-primary/70">Función:</strong> {funcTag.description}
+                    <strong className="text-primary/70">Paso 2:</strong> {funcTag.description}
+                  </span>
+                )}
+                {secTag && (
+                  <span className="block mt-1 pt-1 border-t border-border">
+                    <strong className="text-primary/70">Paso 3:</strong> {secTag.description}
+                  </span>
+                )}
+                {span.verbConjugation && (
+                  <span className="block mt-1 pt-1 border-t border-border">
+                    <strong className="text-primary/70">Aditz:</strong> {span.verbParadigm} → {span.verbConjugation}
                   </span>
                 )}
               </p>

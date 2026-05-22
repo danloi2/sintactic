@@ -11,7 +11,7 @@ interface AutocompleteProps {
 }
 
 export function Autocomplete({ className }: AutocompleteProps) {
-  const { addSpan, setPendingSpan } = useAnalysisStore();
+  const { addSpan, setPendingSpan, language } = useAnalysisStore();
   const {
     isAutocompleteOpen,
     setAutocompleteOpen,
@@ -25,8 +25,8 @@ export function Autocomplete({ className }: AutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredTags = useMemo(() => {
-    return filterTags(autocompleteQuery);
-  }, [autocompleteQuery]);
+    return filterTags(autocompleteQuery, language);
+  }, [autocompleteQuery, language]);
 
   useEffect(() => {
     if (isAutocompleteOpen && inputRef.current) {
@@ -41,19 +41,36 @@ export function Autocomplete({ className }: AutocompleteProps) {
   const handleSelectTag = useCallback(
     (tag: Tag) => {
       if (selectedTokenIds.length > 0) {
-        if (tag.category === "phrase" || ["nucleo", "enlace", "nexo", "modificador"].includes(tag.id)) {
-          // Si es un sintagma o núcleo/enlace/nexo/modificador, pedir función/morfología
+        if (
+          tag.category === "phrase" ||
+          ["nucleo", "enlace", "nexo", "modificador", "eu-n", "eu-p"].includes(
+            tag.id
+          )
+        ) {
+          // Iniciar flujo de múltiples pasos (Step 1)
           setPendingSpan({ tagId: tag.id, tokenIds: selectedTokenIds });
         } else {
           // Otros, agregar directamente
-          addSpan(tag.id, selectedTokenIds, undefined, tag.category === "structure");
+          addSpan(
+            tag.id,
+            selectedTokenIds,
+            undefined,
+            tag.category === "structure"
+          );
         }
         clearSelection();
       }
       setAutocompleteOpen(false);
       setAutocompleteQuery("");
     },
-    [selectedTokenIds, addSpan, setPendingSpan, clearSelection, setAutocompleteOpen, setAutocompleteQuery]
+    [
+      selectedTokenIds,
+      addSpan,
+      setPendingSpan,
+      clearSelection,
+      setAutocompleteOpen,
+      setAutocompleteQuery,
+    ]
   );
 
   const handleKeyDown = useCallback(

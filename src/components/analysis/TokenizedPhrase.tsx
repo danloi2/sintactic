@@ -2,18 +2,17 @@ import { useCallback, useMemo, useRef } from "react";
 import { useAnalysisStore, useUIStore } from "@/store";
 import { Token } from "./Token";
 import { cn } from "@/lib/utils";
-import { ChevronUp, ChevronDown, Layers, Plus, Minus } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { SelectionBox } from "./parts/SelectionBox";
 import { LayerRow } from "./parts/LayerRow";
 import { useSelection } from "@/hooks/useSelection";
 
-const SIDEBAR_W = 160; // 100 nivel + 60 gutter
-const MIN_TOKEN_W = 110; // ancho mínimo por token
+const SIDEBAR_W = 160;
+const MIN_TOKEN_W = 110;
 
 export function TokenizedPhrase({ className }: { className?: string }) {
-  const { tokens, spans, isAnalyzed, currentLayer, setCurrentLayer, removeLayer } = useAnalysisStore();
+  const { tokens, spans, isAnalyzed, currentLayer, setCurrentLayer } = useAnalysisStore();
   const { clearSelection, setAutocompleteOpen, isExporting } = useUIStore();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -30,66 +29,25 @@ export function TokenizedPhrase({ className }: { className?: string }) {
   const maxLayer = useMemo(() => Math.max(currentLayer, ...spans.map((s) => s.layer)), [spans, currentLayer]);
 
   const layerNumbers = useMemo(() => {
-    const layers = new Set(spans.map((s) => s.layer));
-    layers.add(1);
-    layers.add(currentLayer);
-    return Array.from(layers).sort((a, b) => b - a);
-  }, [spans, currentLayer]);
+    const layers = [];
+    for (let i = maxLayer; i >= 1; i--) {
+      layers.push(i);
+    }
+    return layers;
+  }, [maxLayer]);
 
   if (!isAnalyzed || tokens.length === 0) return null;
 
-  // El ancho mínimo del scroll: sidebar + tokens
-  const minScrollWidth = SIDEBAR_W + tokens.length * MIN_TOKEN_W;
+  const wordCount = useMemo(() => new Set(tokens.map((t) => t.wordId || t.id)).size, [tokens]);
+  const minScrollWidth = SIDEBAR_W + wordCount * MIN_TOKEN_W;
 
   return (
     <TooltipProvider>
-      <div className={cn("space-y-6", className)}>
-        {/* Barra de Control de Niveles */}
-        {!isExporting && (
-          <div className="flex items-center justify-center gap-4 bg-card p-3 rounded-xl border-2 border-primary/20 shadow-lg w-fit mx-auto">
-            <div className="flex items-center gap-2 px-3 border-r border-border mr-2">
-              <Layers className="w-5 h-5 text-primary" />
-              <span className="text-sm font-bold uppercase tracking-wider text-foreground">Nivel Actual</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setCurrentLayer(Math.max(1, currentLayer - 1))}
-                className="p-1.5 hover:bg-accent rounded-full transition-colors disabled:opacity-30 border border-border"
-                disabled={currentLayer <= 1}
-              >
-                <ChevronDown className="w-5 h-5" />
-              </button>
-              <span className="text-2xl font-black text-primary leading-none min-w-[40px] text-center">{currentLayer}</span>
-              <button
-                onClick={() => setCurrentLayer(currentLayer + 1)}
-                className="p-1.5 hover:bg-accent rounded-full transition-colors border border-border"
-              >
-                <ChevronUp className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="flex items-center gap-2 ml-2">
-              <button
-                onClick={() => removeLayer(currentLayer)}
-                className="p-1.5 hover:bg-destructive/20 bg-destructive/10 rounded-full transition-colors border border-destructive/20 text-destructive"
-                title="Eliminar capa"
-              >
-                <Minus className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setCurrentLayer(currentLayer + 1)}
-                className="p-1.5 hover:bg-primary/20 bg-primary/10 rounded-full transition-colors border border-primary/20 text-primary"
-                title="Añadir capa"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        )}
-
+      <div className={cn(className)}>
         {/* Lienzo — scrollable horizontalmente si la frase es larga */}
         <div
           ref={containerRef}
-          className={cn("relative select-none pb-12 pt-4", isExporting ? "overflow-visible" : "overflow-x-auto")}
+          className={cn("relative select-none pt-2 pb-4", isExporting ? "overflow-visible" : "overflow-x-auto")}
           onClick={handleContainerClick}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -98,13 +56,8 @@ export function TokenizedPhrase({ className }: { className?: string }) {
         >
           {selectionRect && <SelectionBox rect={selectionRect} />}
 
-          {/*
-            Contenedor exportable.
-            - En modo normal: ocupa 100% del scroll container pero nunca menos de minScrollWidth
-            - En modo exportación: solo los tokens, sin sidebar
-          */}
           <div
-            className="token-grid-container-export relative pb-10 pr-8"
+            className="token-grid-container-export relative pb-6 pr-8"
             style={{
               width: "100%",
               minWidth: isExporting ? undefined : `${minScrollWidth}px`,
@@ -118,21 +71,30 @@ export function TokenizedPhrase({ className }: { className?: string }) {
               )}
             />
 
-            <div className="relative z-10 flex" style={{ minHeight: 120, paddingTop: 12 }}>
+            <div className="relative z-10 flex" style={{ minHeight: 80, paddingTop: 8 }}>
               {/* Sidebar placeholder */}
               {!isExporting && (
                 <div className="shrink-0" style={{ width: SIDEBAR_W }} />
               )}
-              {/* Tokens: se reparten el espacio disponible con flex-1 */}
-              {tokens.map((token, index) => (
-                <div
-                  key={token.id}
-                  className="flex-1 flex items-center justify-center"
-                  style={{ minWidth: MIN_TOKEN_W }}
-                >
-                  <Token token={token} index={index} />
-                </div>
-              ))}
+              {/* Tokens */}
+              {tokens.map((token, index) => {
+                const prevToken = index > 0 ? tokens[index - 1] : null;
+                const isNewWord =
+                  token.wordId && prevToken?.wordId && token.wordId !== prevToken.wordId;
+
+                return (
+                  <div
+                    key={token.id}
+                    className="flex flex-col items-center justify-center"
+                    style={{
+                      minWidth: token.isLetter ? undefined : MIN_TOKEN_W,
+                      marginLeft: isNewWord ? 16 : 0,
+                    }}
+                  >
+                    <Token token={token} index={index} />
+                  </div>
+                );
+              })}
             </div>
 
             {/* ── Capas de Análisis ── */}
