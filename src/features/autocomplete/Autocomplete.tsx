@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Tag } from "@/core/types";
-import { filterTags } from "../tags/tagRegistry";
 import { useTagFlow } from "../tags/useTagFlow";
 import { useUIStore } from "@/core/store/uiStore";
 import { Button } from "@/components/ui/button";
@@ -13,11 +12,13 @@ interface AutocompleteProps {
 
 export function Autocomplete({ className }: AutocompleteProps) {
   const {
-    language,
     selectedTokenIds,
     categoryLabels,
     handleSelectTag,
     config,
+    pendingSpan,
+    isMorphologyMode,
+    tags,
   } = useTagFlow();
 
   const {
@@ -31,8 +32,16 @@ export function Autocomplete({ className }: AutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredTags = useMemo(() => {
-    return filterTags(autocompleteQuery, language);
-  }, [autocompleteQuery, language]);
+    const grouped = config.getFilteredTags(autocompleteQuery, pendingSpan, isMorphologyMode, tags);
+    const order = config.categoryOrder;
+    const flat: Tag[] = Object.values(grouped)
+      .flat()
+      .filter((t): t is Tag => t !== undefined);
+    // Deduplicate by id
+    const seen = new Set<string>();
+    const unique = flat.filter((t) => { if (seen.has(t.id)) return false; seen.add(t.id); return true; });
+    return [...unique].sort((a, b) => (order[a.category] ?? 99) - (order[b.category] ?? 99));
+  }, [autocompleteQuery, pendingSpan, isMorphologyMode, tags, config]);
 
   useEffect(() => {
     if (isAutocompleteOpen && inputRef.current) {

@@ -64,6 +64,26 @@ export const euTags: Tag[] = [
     description: "Subjektuari buruz esaten dena.",
     renderShape: "bracket",
   },
+  {
+    id: "eu-oz",
+    label: "Objektu Zuzena",
+    short: "OZ",
+    aliases: ["oz", "objektu zuzena", "objeto directo", "direct object"],
+    category: "function",
+    color: "#EA580C",
+    description: "Ekintza zuzenean jasotzen duen osagarria.",
+    renderShape: "bracket",
+  },
+  {
+    id: "eu-zo",
+    label: "Zehar Objektua",
+    short: "ZO",
+    aliases: ["zo", "zehar objektua", "objeto indirecto", "indirect object"],
+    category: "function",
+    color: "#059669",
+    description: "Ekintzaren onuraduna edo kaltetua adierazten duen osagarria.",
+    renderShape: "bracket",
+  },
 
   // ── DEKLINAZIOAK ───────────────────────────────────────────────────────────
   {

@@ -62,6 +62,15 @@ export const euConfig: LanguageConfig = {
         };
       } else {
         // EU Step 2
+        // Aditz Sintagma (eu-as) skips declension and goes straight to function
+        if (pendingSpan.tagId === "eu-as") {
+          return {
+            function: filterByQuery(
+              allTags.filter((t) => t.category === "function"),
+              searchQuery
+            ),
+          };
+        }
         if (isMorphologyMode) {
           return {
             morphology: filterByQuery(
@@ -109,6 +118,16 @@ export const euConfig: LanguageConfig = {
         }
       } else {
         // Step 2 or transition to Step 3
+        // Aditz Sintagma (eu-as): step 2 is function selection (Subjektua / Predikatua)
+        if (pendingSpan.tagId === "eu-as" && tag.category === "function") {
+          onComplete(
+            pendingSpan.tagId,
+            pendingSpan.tokenIds,
+            tag.id,
+            false
+          );
+          return true;
+        }
         const isMorph = ["nucleo", "enlace", "nexo", "modificador", "eu-n", "eu-p"].includes(pendingSpan.tagId);
         if (isMorph && tag.category === "morphology") {
           if (tag.id === "eu-ad") {
@@ -153,6 +172,7 @@ export const euConfig: LanguageConfig = {
   getStepText: (pendingSpan, isMorphologyMode, allTags) => {
     if (!pendingSpan) return "";
     if (pendingSpan.declinationTagId === "eu-ad") return "3. Urratsa: Konfiguratu Aditza";
+    if (pendingSpan.tagId === "eu-as" && !pendingSpan.declinationTagId) return "2. Urratsa: Zein funtzio betetzen du?";
     if (isMorphologyMode) return "2. Urratsa: Zein da bere morfologia?";
     if (!pendingSpan.declinationTagId) return "2. Urratsa: Zein da bere deklinazioa?";
     const parentTag = allTags.find((t) => t.id === pendingSpan.tagId);
@@ -162,6 +182,9 @@ export const euConfig: LanguageConfig = {
   },
   
   stepTitle: (pendingSpan, isMorphologyMode, allTags) => {
+    if (pendingSpan?.tagId === "eu-as" && !pendingSpan.declinationTagId) {
+      return "funtzioa";
+    }
     if (pendingSpan && pendingSpan.declinationTagId) {
       const parentTag = allTags.find((t) => t.id === pendingSpan.tagId);
       const isPhrase = parentTag?.category === "phrase";

@@ -44,6 +44,9 @@ export function FunctionSelector({ className }: FunctionSelectorProps) {
         }
         return ["function"];
       }
+      if (pendingSpan.tagId === "eu-as") {
+        return ["function"]; // Aditz Sintagma goes straight to function (Sujeto/Predicado)
+      }
       if (isMorphologyMode) return ["morphology"]; // Step 2 (morph)
       return ["declension"]; // Step 2 (declension)
     } else {
@@ -163,6 +166,9 @@ export function FunctionSelector({ className }: FunctionSelectorProps) {
         const parentTag = allTags.find((t) => t.id === pendingSpan.tagId);
         const isPhrase = parentTag?.category === "phrase";
         return isPhrase ? "la morfología o función" : "la función";
+      }
+      if (pendingSpan.tagId === "eu-as") {
+        return "la función";
       }
       return isMorphologyMode ? "la morfología" : "la declinación";
     }
