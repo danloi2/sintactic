@@ -58,9 +58,12 @@ export function TokenizedPhrase({ className }: { className?: string }) {
           {selectionRect && <SelectionBox rect={selectionRect} />}
 
           <div
-            className="token-grid-container-export relative pb-6 pr-8"
+            className={cn(
+              "token-grid-container-export relative",
+              isExporting ? "px-12 pb-16 pt-8" : "pr-8 pb-10"
+            )}
             style={{
-              width: "100%",
+              width: isExporting ? "max-content" : "100%",
               minWidth: isExporting ? undefined : `${minScrollWidth}px`,
             }}
           >
