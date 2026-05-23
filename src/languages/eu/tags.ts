@@ -42,6 +42,16 @@ export const euTags: Tag[] = [
     description: "Posposizioa amaieran duen sintagma. Erdarazko SPrep-aren baliokidea.",
     renderShape: "bracket",
   },
+  {
+    id: "eu-adbs",
+    label: "Adberbio Sintagma",
+    short: "AdbS",
+    aliases: ["adbs", "adberbio sintagma", "adverb phrase", "sintagma adverbial"],
+    category: "phrase",
+    color: "#F59E0B",
+    description: "Adberbioa nukleo duen sintagma.",
+    renderShape: "bracket",
+  },
 
   // ── FUNTZIOAK ──────────────────────────────────────────────────────────────
   {
